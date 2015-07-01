@@ -1,7 +1,15 @@
 {
 	"ImportPath": "github.com/urakozz/transpoint.io",
 	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/codegangsta/negroni",
+			"Comment": "v0.1-70-gc7477ad",
+			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
+		},
 		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
@@ -16,8 +24,20 @@
 			"Rev": "443e926da0d793d3b3f32118b1e4ba52ada26503"
 		},
 		{
+			"ImportPath": "github.com/pjebs/jsonerror",
+			"Rev": "236f3c18307ad38e59fc3f85e7bde1bef6233782"
+		},
+		{
+			"ImportPath": "github.com/pjebs/restgate",
+			"Rev": "f74619a6f98c2313f588b58c191afcae321d0d3b"
+		},
+		{
 			"ImportPath": "github.com/xlab/closer",
 			"Rev": "9ac1c238130f4dbdffae6242f6a737f90e2178a7"
+		},
+		{
+			"ImportPath": "gopkg.in/unrolled/render.v1",
+			"Rev": "d4edd394101358a4f8e462c43f884d9af99a4d30"
 		}
 	]
 }

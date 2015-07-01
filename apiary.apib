@@ -1,0 +1,202 @@
+FORMAT: 1A
+HOST: http://api.urakozz.me/v1/
+
+# transpoint.io
+
+**transpoint.io** is service that allows you to aggregate a number of the online translator, 
+smartly proceed text media content including smiles, hashtags, etc. and cache translation result.
+
+# API Root [/]
+
+This resource does not have any attributes. Instead it offers the initial
+API affordances in the form of the links in the JSON body.
+
+It is recommend to follow the “url” link values,
+[Link](https://tools.ietf.org/html/rfc5988) or Location headers where
+applicable to retrieve resources. Instead of constructing your own URLs,
+to keep your client decoupled from implementation details.
+
+## Retrieve the Entry Point [GET]
+
++ Response 200 (application/json)
+
+        {
+            "translations_url": "/translations",
+            "auth_url": "/auth",
+        }
+
+## Group Authentication
+
+To Authenticate you need recieve an auth_token in your [translatepoint.io](https://translatepoint.io) private account.
+
+You should pass that token as a part of every request in header:
+
+**X-Auth-Token: 123.qweqw.987987987**
+
+## Group Translation
+
+A Translatable object ( **Request** ) has the following attributes:
+
++ id (string) - [optional]
++ text (required, string, `Translate me`)
++ lang (required, array[string], `["de", "fr"]`)
++ source (string) - [optional] - autodetecting if not specified
+
+Following attributes are updatable:
++ text
++ lang
++ source
+
+## Request Translation without Id [/translations]
+
+Id will be generated automaticly (uuid4)
+
+### Create Translation Object  [POST]
+
++ Request (application/json)
+    + Headers 
+    
+            X-Auth-Token: 123.qweqw.987987987
+
+    + Body
+    
+            {
+                "text": "Favourite online translator?",
+                "lang": ["de", "fr"]
+            }
+
+
+
++ Response 201 (application/json)
+
+        {
+        
+            "id": "64aad282-5d72-4545-5721-1089e2c2ce2c",
+            "translations": {
+                "de":{
+                    "text": "Beliebteste Online-Übersetzer?",
+                    "url": "/translations/64aad282-5d72-4545-5721-1089e2c2ce2c/de"
+                }, 
+                "fr":{
+                    "text":"Traducteur en ligne préférée?",
+                    "url":"/translations/64aad282-5d72-4545-5721-1089e2c2ce2c/fr"
+                }
+            },
+            "source":"en"
+        }
+        
++ Response 400 (application/json)
+
+        {
+            "error":"Text is empty"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Languages are not specified"
+        }
+
+## Request Translation with Id [/translations/{translation_id}]
+
++ Parameters
+    + translation_id: 123123 (required, string) - ID of the Message/Caption in your system
+
+### Create or Update Translation Object with Id [POST]
+    
+1. If id is not exists, request considered as **CREATE**
+2. If id is exists, request considered as **UPDATE**
+
+**CREATE**:
+
+1. All specified translations will attached to the given Id
+
+**UPDATE**
+
+1. If text or source is not changed and no new langs specified, nothing happens, you will recieve response code 200
+2. If text or source is changed or new language has been added, you will recieve updated translation object, code 201
+
++ Request (application/json)
+    + Headers 
+    
+            X-Auth-Token: 123.qweqw.987987987
+
+    + Body
+    
+            {
+                "text": "Favourite online translator?",
+                "lang": ["de", "fr"]
+            }
+
+
+
++ Response 201 (application/json)
+
+        {
+            "id": "123123",
+            "translations": {
+                "de":{
+                    "text": "Beliebteste Online-Übersetzer?",
+                    "url": "/translations/64aad282-5d72-4545-5721-1089e2c2ce2c/de"
+                }, 
+                "fr":{
+                    "text":"Traducteur en ligne préférée?",
+                    "url":"/translations/64aad282-5d72-4545-5721-1089e2c2ce2c/fr"
+                }
+            },
+            "source":"en"
+        }
+
+### Get Translation Object [GET]
+
+Get Translations by given Id
+
++ Request (application/json)
+    + Headers 
+    
+            X-Auth-Token: 123.qweqw.987987987
+
++ Response 200 (application/json)
+
+        {
+            "id": "123123",
+            "translations": {
+                "de":{
+                    "text": "Beliebteste Online-Übersetzer?",
+                    "url": "/translations/64aad282-5d72-4545-5721-1089e2c2ce2c/de"
+                }, 
+                "fr":{
+                    "text":"Traducteur en ligne préférée?",
+                    "url":"/translations/64aad282-5d72-4545-5721-1089e2c2ce2c/fr"
+                }
+            },
+            "source":"en"
+        }
+
+### Delete Translation Object [DELETE]
+
+This action is deleting translation object.
++ Request (application/json)
+    + Headers 
+    
+            X-Auth-Token: 123.qweqw.987987987
+
++ Response 204
+
+## Delete particular language in Translation Object [/translations/{id}/{lang}]
+
++ Parameters
+    + id: 123123 (required, string) - ID of the Question in form of an integer
+    + lang: de (required, string) - language
+
+### Delete one language in Translation Object [DELETE]
+
+This action is deleting only translation for the specified language.
+
++ Request (application/json)
+    + Headers 
+    
+            X-Auth-Token: 123.qweqw.987987987
++ Response 204
+
+

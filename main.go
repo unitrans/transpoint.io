@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"log"
 	"fmt"
 	"net/http"
@@ -21,13 +22,13 @@ func main() {
 }
 
 func run() error {
-
+	port := os.Getenv("PORT")
 	router := mux.NewRouter()
 	router.HandleFunc("/ping", Ping).Methods("GET")
 
-	log.Printf("Info: Starting application on port %s", "8088")
+	log.Printf("Info: Starting application on port %s", port)
 
-	log.Fatal(http.ListenAndServe(":8088", router))
+	log.Fatal(http.ListenAndServe(":"+port, router))
 	return nil
 }
 

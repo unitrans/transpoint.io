@@ -23,11 +23,11 @@ func Router() *mux.Router {
 //	negRest2.UseHandler(rest2Router)
 //
 //	//Create main router
-//	mainRouter := mux.NewRouter().StrictSlash(true)
+	mainRouter := mux.NewRouter().StrictSlash(true)
 //	mainRouter.HandleFunc("/", MainHandler()) //Main Handler -> Use your own
 //	mainRouter.Handle("/api", negRest) //This endpoint is protected by RestGate via hardcoded KEYs
 //	mainRouter.Handle("/api2", negRest2) //This endpoint is protected by RestGate via KEYs stored in a database
 //
-//	return mainRouter
+	return mainRouter
 
 }

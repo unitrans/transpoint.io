@@ -12,14 +12,18 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/xlab/closer"
 	"github.com/pjebs/restgate"
-
-	"encoding/json"
+	r "gopkg.in/unrolled/render.v1"
 )
 
 const ApiVersion = "v1"
 
+var (
+	render *r.Render
+)
+
 func init() {
 	godotenv.Load()
+	render = r.New(r.Options{})
 }
 
 func main() {
@@ -59,27 +63,17 @@ func run() error {
 }
 
 func C(r *http.Request, authenticatedKey string) {
-	context.Set(r, 0, authenticatedKey) // Read http://www.gorillatoolkit.org/pkg/context about setting arbitary context key
-}
-
-func ResponseJson(w http.ResponseWriter, v interface{}) {
-
-	jsonBytes, err := json.Marshal(v)
-	if err != nil{
-		jsonBytes, _ = json.Marshal(fmt.Sprintf("%v", v))
-	}
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintln(w, string(jsonBytes))
+	context.Set(r, 0, authenticatedKey)
 }
 
 func Ping (w http.ResponseWriter, r *http.Request) {
-	ResponseJson(w, "PONG")
+	render.JSON(w, http.StatusOK, "PONG")
 }
 
 func Default (w http.ResponseWriter, r *http.Request) {
 	methodMap := make(map[string]string)
 	methodMap["translation_map"] = fmt.Sprintf("/%s/%s", ApiVersion, "translations")
-	ResponseJson(w, methodMap)
+	render.JSON(w, http.StatusOK, methodMap)
 }
 
 func cleanup() {

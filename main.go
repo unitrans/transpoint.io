@@ -36,7 +36,12 @@ func run() error {
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/ping", Ping).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/", Default).Methods("GET")
+	router.HandleFunc("/"+ApiVersion, Default).Methods("GET")
+	router.HandleFunc("/"+ApiVersion+"/translations", Create).Methods("POST")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Save).Methods("POST")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Get).Methods("GET")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Delete).Methods("DELETE")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang}", DeleteParticular).Methods("DELETE")
 
 	app := negroni.New()
 	//These middleware is common to all routes
@@ -62,6 +67,10 @@ func run() error {
 	return nil
 }
 
+func cleanup() {
+	log.Print("Info: Gracefully closing application")
+}
+
 func C(r *http.Request, authenticatedKey string) {
 	context.Set(r, 0, authenticatedKey)
 }
@@ -76,6 +85,20 @@ func Default (w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, http.StatusOK, methodMap)
 }
 
-func cleanup() {
-	log.Print("Info: Gracefully closing application")
+func Create (w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, http.StatusCreated, "Create")
+}
+
+func Save (w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, http.StatusCreated, "Save")
+}
+
+func Get (w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, http.StatusOK, "Get")
+}
+func Delete (w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, http.StatusNoContent, "Delete")
+}
+func DeleteParticular (w http.ResponseWriter, r *http.Request) {
+	render.JSON(w, http.StatusNoContent, "DeleteParticular")
 }

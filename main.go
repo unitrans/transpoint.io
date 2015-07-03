@@ -17,6 +17,7 @@ import (
 	"github.com/urakozz/transpoint.io/storage"
 	"github.com/satori/go.uuid"
 	"encoding/json"
+	"time"
 )
 
 const ApiVersion = "v1"
@@ -47,8 +48,9 @@ func run() error {
 	router.HandleFunc("/"+ApiVersion+"/translations", Create).Methods("POST")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Save).Methods("POST")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Get).Methods("GET")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", GetParticular).Methods("GET")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Delete).Methods("DELETE")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang}", DeleteParticular).Methods("DELETE")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", DeleteParticular).Methods("DELETE")
 
 	app := negroni.New()
 	//These middleware is common to all routes
@@ -110,15 +112,50 @@ func Save (w http.ResponseWriter, r *http.Request) {
 }
 
 func Get (w http.ResponseWriter, r *http.Request) {
+	var response ResponseObject
 	id := mux.Vars(r)["id"]
-	log.Println(id)
-	data := driver.Client.HGetAllMap(id)
-	log.Println(data.Val())
-	render.JSON(w, http.StatusOK, data.Val())
+	start := time.Now()
+	data := driver.Client.HGetAllMap(id).Val()
+	log.Printf("Completed in %v", time.Since(start))
+	if _, exists := data["source"]; !exists {
+		render.JSON(w, http.StatusNotFound, map[string]string{"error":"Not found"})
+		return
+	}
+
+	response.Id = id
+	response.Source = data["source"]
+	delete(data, "source")
+	response.Translations = data
+
+	render.JSON(w, http.StatusOK, response)
 }
+
+func GetParticular (w http.ResponseWriter, r *http.Request) {
+	var response ResponseObject
+	id := mux.Vars(r)["id"]
+	lang := mux.Vars(r)["lang"]
+
+	start := time.Now()
+	data := driver.Client.HGetAllMap(id).Val()
+	log.Printf("Completed in %v", time.Since(start))
+
+	if _, exists := data[lang]; !exists {
+		render.JSON(w, http.StatusNotFound, map[string]string{"error":"Not found"})
+		return
+	}
+
+	response.Id = id
+	response.Source = data["source"]
+	delete(data, "source")
+	response.Translations = map[string]string{lang:data[lang]}
+
+	render.JSON(w, http.StatusOK, response)
+}
+
 func Delete (w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, http.StatusNoContent, "Delete")
 }
+
 func DeleteParticular (w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, http.StatusNoContent, "DeleteParticular")
 }
@@ -129,3 +166,11 @@ type RequestObject struct {
 	Lang []string `json:"lang"`
 	Source string `json:"source"`
 }
+
+type ResponseObject struct {
+	Id string `json:"id"`
+	Source string `json:"source"`
+	Translations map[string]string `json:"translations"`
+}
+
+

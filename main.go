@@ -18,6 +18,7 @@ import (
 	"github.com/satori/go.uuid"
 	"encoding/json"
 	"time"
+	"github.com/urakozz/transpoint.io/translator"
 )
 
 const ApiVersion = "v1"
@@ -100,8 +101,11 @@ func Create (w http.ResponseWriter, r *http.Request) {
 	reader := json.NewDecoder(r.Body)
 	var request *RequestObject
 	reader.Decode(&request)
+	translator := translator.NewYandexTranslator()
+	container := translator.Translate(request.Text, []string{"ru"})
+	log.Println(container)
 	go func(){
-		driver.Save(u1.String(), "ru", map[string]string{"ru": "rrrr", "en": "eeeee"})
+		driver.Save(u1.String(), "en", container.Bag)
 	}()
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1.String())
 	render.JSON(w, http.StatusCreated, u1.String())

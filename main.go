@@ -46,7 +46,7 @@ func run() error {
 	router.HandleFunc("/ping", Ping).Methods("GET")
 	router.HandleFunc("/"+ApiVersion, Default).Methods("GET")
 	router.HandleFunc("/"+ApiVersion+"/translations", Create).Methods("POST")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Save).Methods("POST")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id:[a-z0-9-]+}", Save).Methods("POST")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Get).Methods("GET")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", GetParticular).Methods("GET")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Delete).Methods("DELETE")
@@ -101,63 +101,69 @@ func Create (w http.ResponseWriter, r *http.Request) {
 	var request *RequestObject
 	reader.Decode(&request)
 	go func(){
-		driver.Client.HMSet(u1.String(), "source", "ru", "ru", "rrrr", "en", "eeeee")
+		driver.Save(u1.String(), "ru", map[string]string{"ru": "rrrr", "en": "eeeee"})
 	}()
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1.String())
 	render.JSON(w, http.StatusCreated, u1.String())
 }
 
 func Save (w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	go func(){
+		driver.Save(id, "ru", map[string]string{"ru": "rrrr", "en": "eeeee"})
+	}()
+	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
 	render.JSON(w, http.StatusCreated, "Save")
 }
 
 func Get (w http.ResponseWriter, r *http.Request) {
-	var response ResponseObject
+
 	id := mux.Vars(r)["id"]
 	start := time.Now()
-	data := driver.Client.HGetAllMap(id).Val()
+	bag, err := driver.GetAll(id)
 	log.Printf("Completed in %v", time.Since(start))
-	if _, exists := data["source"]; !exists {
+	if nil != err {
 		render.JSON(w, http.StatusNotFound, map[string]string{"error":"Not found"})
 		return
 	}
 
-	response.Id = id
-	response.Source = data["source"]
-	delete(data, "source")
-	response.Translations = data
-
-	render.JSON(w, http.StatusOK, response)
+	render.JSON(w, http.StatusOK, bag)
 }
 
 func GetParticular (w http.ResponseWriter, r *http.Request) {
-	var response ResponseObject
 	id := mux.Vars(r)["id"]
 	lang := mux.Vars(r)["lang"]
 
 	start := time.Now()
-	data := driver.Client.HGetAllMap(id).Val()
+	bag, err := driver.GetLang(id, lang)
 	log.Printf("Completed in %v", time.Since(start))
 
-	if _, exists := data[lang]; !exists {
+	if nil != err {
 		render.JSON(w, http.StatusNotFound, map[string]string{"error":"Not found"})
 		return
 	}
 
-	response.Id = id
-	response.Source = data["source"]
-	delete(data, "source")
-	response.Translations = map[string]string{lang:data[lang]}
-
-	render.JSON(w, http.StatusOK, response)
+	render.JSON(w, http.StatusOK, bag)
 }
 
 func Delete (w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, http.StatusNoContent, "Delete")
+	id := mux.Vars(r)["id"]
+	err := driver.Delete(id)
+	if err != nil {
+		log.Println("Delete", id, err)
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func DeleteParticular (w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, http.StatusNoContent, "DeleteParticular")
+	id := mux.Vars(r)["id"]
+	lang := mux.Vars(r)["lang"]
+	err := driver.DeleteLang(id, lang)
+
+	if err != nil {
+		log.Println("Delete", id, err)
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 type RequestObject struct {
@@ -165,12 +171,6 @@ type RequestObject struct {
 	Text string `json:"text"`
 	Lang []string `json:"lang"`
 	Source string `json:"source"`
-}
-
-type ResponseObject struct {
-	Id string `json:"id"`
-	Source string `json:"source"`
-	Translations map[string]string `json:"translations"`
 }
 
 

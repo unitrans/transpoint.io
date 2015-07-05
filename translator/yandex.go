@@ -9,7 +9,12 @@ import (
 	"log"
 	"encoding/json"
 	"strings"
+//	"sync"
+	"sync"
 )
+
+const YT_KEY = "trnsl.1.1.20150414T114844Z.a033fd4e2f954a35.ae3277873ab19d5355dbced6d668dc71b3011865"
+const YT_URL = "https://translate.yandex.net/api/v1.5/tr.json/translate"
 
 type YandexTranslator struct {
 	client *http.Client
@@ -19,32 +24,57 @@ func NewYandexTranslator() *YandexTranslator {
 	return &YandexTranslator{client:initClient()}
 }
 
-func (t *YandexTranslator) Translate(text string, languages []string) *TranslationContainer {
-	form := url.Values{}
-	form.Add("key", "trnsl.1.1.20150414T114844Z.a033fd4e2f954a35.ae3277873ab19d5355dbced6d668dc71b3011865")
-	form.Add("lang", languages[0])
-	form.Add("text", text)
-	req, _ := http.NewRequest("POST", "https://translate.yandex.net/api/v1.5/tr.json/translate", bytes.NewBufferString(form.Encode()))
+func (t *YandexTranslator) Translate(text string, languages []string) (*TranslationContainer) {
+	container := &TranslationContainer{
+		Bag:TranslationBag{},
+	}
+	responseChan := make(chan *YandexResponse, len(languages))
+
+	go t.doRequests(text, languages, responseChan)
+	for resp := range responseChan {
+		log.Println(resp)
+		container.Bag[resp.GetLang()] = resp.GetText()
+		container.Source = resp.GetSource()
+	}
+	return container
+}
+
+func (t *YandexTranslator) doRequests(text string, languages []string, c chan *YandexResponse){
+	wg := &sync.WaitGroup{}
+	for _, v := range languages {
+		wg.Add(1)
+		go func(text, lang string){
+			defer wg.Done()
+			resp := t.TranslateOne(text, lang)
+			log.Println(lang, text, resp)
+			c <- resp
+		}(text, v)
+	}
+	wg.Wait()
+	close(c)
+}
+
+func (t *YandexTranslator) TranslateOne(text string, language string) (data *YandexResponse){
+	req, _ := http.NewRequest("POST", YT_URL, bytes.NewBufferString(t.getQueryString(text, language)))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
+	defer resp.Body.Close()
 	if err != nil {
 		log.Println(err)
 	}
-	var data *YandexResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Println(err)
 	}
+	return
+}
 
-	defer resp.Body.Close()
-
-	log.Println("response Status:", resp.Status)
-	log.Println("response Headers:", resp.Header)
-	log.Println("response obj:", data)
-	return &TranslationContainer{
-		Source: data.GetSource(),
-		Bag:TranslationBag{data.GetLang():data.GetText()},
-	}
+func (t *YandexTranslator) getQueryString(text, lang string)string{
+	form := url.Values{}
+	form.Add("key", YT_KEY)
+	form.Add("lang", lang)
+	form.Add("text", text)
+	return form.Encode()
 }
 
 type YandexResponse struct {

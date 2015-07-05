@@ -102,7 +102,7 @@ func Create (w http.ResponseWriter, r *http.Request) {
 	var request *RequestObject
 	reader.Decode(&request)
 	translator := translator.NewYandexTranslator()
-	container := translator.Translate(request.Text, []string{"ru"})
+	container := translator.Translate(request.Text, []string{"ru", "de", "it", "fr", "nl"})
 	log.Println(container)
 	go func(){
 		driver.Save(u1.String(), "en", container.Bag)

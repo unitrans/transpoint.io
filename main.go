@@ -97,24 +97,26 @@ func Default (w http.ResponseWriter, r *http.Request) {
 }
 
 func Create (w http.ResponseWriter, r *http.Request) {
-	u1 := uuid.NewV4()
-	reader := json.NewDecoder(r.Body)
+	u1 := uuid.NewV4().String()
 	var request *RequestObject
-	reader.Decode(&request)
+	json.NewDecoder(r.Body).Decode(&request)
 	translator := translator.NewYandexTranslator()
-	container := translator.Translate(request.Text, []string{"ru", "de", "it", "fr", "nl"})
+	container := translator.Translate(request.Text, request.Lang)
 	log.Println(container)
 	go func(){
-		driver.Save(u1.String(), "en", container.Bag)
+		driver.Save(u1, container.Source, request.Text, container.Bag)
 	}()
-	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1.String())
-	render.JSON(w, http.StatusCreated, u1.String())
+	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1)
+	render.JSON(w, http.StatusCreated, u1)
 }
 
 func Save (w http.ResponseWriter, r *http.Request) {
+	var request *RequestObject
+	json.NewDecoder(r.Body).Decode(&request)
 	id := mux.Vars(r)["id"]
+
 	go func(){
-		driver.Save(id, "ru", map[string]string{"ru": "rrrr", "en": "eeeee"})
+		driver.Save(id, "ru", request.Text, map[string]string{"ru": "rrrr", "en": "eeeee"})
 	}()
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
 	render.JSON(w, http.StatusCreated, "Save")
@@ -127,7 +129,7 @@ func Get (w http.ResponseWriter, r *http.Request) {
 	bag, err := driver.GetAll(id)
 	log.Printf("Completed in %v", time.Since(start))
 	if nil != err {
-		render.JSON(w, http.StatusNotFound, map[string]string{"error":"Not found"})
+		render.JSON(w, http.StatusNotFound, map[string]string{"error":err.Error()})
 		return
 	}
 
@@ -143,7 +145,7 @@ func GetParticular (w http.ResponseWriter, r *http.Request) {
 	log.Printf("Completed in %v", time.Since(start))
 
 	if nil != err {
-		render.JSON(w, http.StatusNotFound, map[string]string{"error":"Not found"})
+		render.JSON(w, http.StatusNotFound, map[string]string{"error":err.Error()})
 		return
 	}
 

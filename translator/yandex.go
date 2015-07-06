@@ -24,16 +24,26 @@ func NewYandexTranslator() *YandexTranslator {
 	return &YandexTranslator{client:initClient()}
 }
 
-func (t *YandexTranslator) Translate(text string, languages []string) (*TranslationContainer) {
+func (t *YandexTranslator) Translate(text string, langs []string) (*TranslationContainer) {
 	container := &TranslationContainer{
-		Bag:TranslationBag{},
+		Translations:TranslationBag{},
 	}
+
+	set := make(map[string]bool)
+	for _, val := range langs {
+		set[val] = true
+	}
+	var languages []string
+	for lang, _ := range set{
+		languages = append(languages, lang)
+	}
+
 	responseChan := make(chan *YandexResponse, len(languages))
 
 	go t.doRequests(text, languages, responseChan)
 	for resp := range responseChan {
 		log.Println(resp)
-		container.Bag[resp.GetLang()] = resp.GetText()
+		container.Translations[resp.GetLang()] = resp.GetText()
 		container.Source = resp.GetSource()
 	}
 	return container

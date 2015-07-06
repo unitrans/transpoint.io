@@ -20,6 +20,14 @@ type TranslationBag struct {
 	Translations map[string]string `json:"translations"`
 }
 
+func (t *TranslationBag) Langs() []string{
+	var langs []string
+	for k := range t.Translations{
+		langs = append(langs, k)
+	}
+	return langs
+}
+
 type RedisDriver struct {
 	Client *redis.Client
 }

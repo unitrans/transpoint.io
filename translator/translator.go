@@ -15,7 +15,7 @@ type Translator interface {
 type TranslationBag map[string]string
 
 type TranslationContainer struct {
-	Bag TranslationBag
+	Translations TranslationBag
 	Source string
 }
 

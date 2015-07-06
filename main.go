@@ -18,7 +18,7 @@ import (
 	"github.com/satori/go.uuid"
 	"encoding/json"
 	"time"
-	"github.com/urakozz/transpoint.io/translator"
+	t "github.com/urakozz/transpoint.io/translator"
 )
 
 const ApiVersion = "v1"
@@ -26,13 +26,14 @@ const ApiVersion = "v1"
 var (
 	render *r.Render
 	driver *storage.RedisDriver
+	translator *t.YandexTranslator
 )
 
 func init() {
 	godotenv.Load()
 	render = r.New(r.Options{})
 	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"))
-
+	translator = t.NewYandexTranslator()
 }
 
 func main() {
@@ -73,7 +74,7 @@ func run() error {
 	log.Printf("Info: Starting application on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 
-//	log.Fatal(http.ListenAndServe(":"+port, router))
+	//	log.Fatal(http.ListenAndServe(":"+port, router))
 	return nil
 }
 
@@ -86,43 +87,70 @@ func C(r *http.Request, authenticatedKey string) {
 	context.Set(r, 0, authenticatedKey)
 }
 
-func Ping (w http.ResponseWriter, r *http.Request) {
+func Ping(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, http.StatusOK, "PONG")
 }
 
-func Default (w http.ResponseWriter, r *http.Request) {
+func Default(w http.ResponseWriter, r *http.Request) {
 	methodMap := make(map[string]string)
 	methodMap["translation_map"] = fmt.Sprintf("/%s/%s", ApiVersion, "translations")
 	render.JSON(w, http.StatusOK, methodMap)
 }
 
-func Create (w http.ResponseWriter, r *http.Request) {
+func Create(w http.ResponseWriter, r *http.Request) {
 	u1 := uuid.NewV4().String()
 	var request *RequestObject
 	json.NewDecoder(r.Body).Decode(&request)
-	translator := translator.NewYandexTranslator()
-	container := translator.Translate(request.Text, request.Lang)
-	log.Println(container)
-	go func(){
-		driver.Save(u1, container.Source, request.Text, container.Bag)
-	}()
+	bag := SmartSave(request, u1)
+
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1)
-	render.JSON(w, http.StatusCreated, u1)
+	render.JSON(w, http.StatusCreated, bag)
 }
 
-func Save (w http.ResponseWriter, r *http.Request) {
+func Save(w http.ResponseWriter, r *http.Request) {
 	var request *RequestObject
 	json.NewDecoder(r.Body).Decode(&request)
 	id := mux.Vars(r)["id"]
+	bag := SmartSave(request, id)
 
-	go func(){
-		driver.Save(id, "ru", request.Text, map[string]string{"ru": "rrrr", "en": "eeeee"})
-	}()
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
-	render.JSON(w, http.StatusCreated, "Save")
+	render.JSON(w, http.StatusCreated, bag)
 }
 
-func Get (w http.ResponseWriter, r *http.Request) {
+func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag) {
+	bag, err := driver.GetAll(id)
+	log.Println(bag)
+
+	langs := request.Lang
+	if err == nil {
+		var newLangs []string
+		if bag.Original == request.Text {
+			for _, lang := range langs {
+				if _, exists := bag.Translations[lang]; !exists {
+					newLangs = append(newLangs, lang)
+				}
+			}
+		} else {
+			newLangs = langs
+			for lang, _ := range bag.Translations {
+				newLangs = append(newLangs, lang)
+			}
+		}
+
+		langs = newLangs
+	}
+
+
+	if 0 == len(langs) {
+		return
+	}
+	container := translator.Translate(request.Text, langs)
+	driver.Save(id, container.Source, request.Text, container.Translations)
+	bag, _ = driver.GetAll(id)
+	return
+}
+
+func Get(w http.ResponseWriter, r *http.Request) {
 
 	id := mux.Vars(r)["id"]
 	start := time.Now()
@@ -136,7 +164,7 @@ func Get (w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, http.StatusOK, bag)
 }
 
-func GetParticular (w http.ResponseWriter, r *http.Request) {
+func GetParticular(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	lang := mux.Vars(r)["lang"]
 
@@ -152,7 +180,7 @@ func GetParticular (w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, http.StatusOK, bag)
 }
 
-func Delete (w http.ResponseWriter, r *http.Request) {
+func Delete(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	err := driver.Delete(id)
 	if err != nil {
@@ -161,7 +189,7 @@ func Delete (w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func DeleteParticular (w http.ResponseWriter, r *http.Request) {
+func DeleteParticular(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	lang := mux.Vars(r)["lang"]
 	err := driver.DeleteLang(id, lang)
@@ -173,9 +201,9 @@ func DeleteParticular (w http.ResponseWriter, r *http.Request) {
 }
 
 type RequestObject struct {
-	Id string `json:"id"`
-	Text string `json:"text"`
-	Lang []string `json:"lang"`
+	Id     string `json:"id"`
+	Text   string `json:"text"`
+	Lang   []string `json:"lang"`
 	Source string `json:"source"`
 }
 

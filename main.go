@@ -10,7 +10,7 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/context"
 	"github.com/joho/godotenv"
-	"github.com/xlab/closer"
+//	"github.com/xlab/closer"
 //	"github.com/pjebs/restgate"
 	r "gopkg.in/unrolled/render.v1"
 
@@ -37,8 +37,9 @@ func init() {
 }
 
 func main() {
-	closer.Bind(cleanup)
-	closer.Checked(run, true)
+//	closer.Bind(cleanup)
+//	closer.Checked(run, true)
+	run()
 }
 
 func run() error {

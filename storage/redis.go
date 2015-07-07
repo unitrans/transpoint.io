@@ -45,7 +45,7 @@ func Redis(address, DB, password string) (*redis.Client) {
 		redisClient = redis.NewClient(&redis.Options{
 			Addr:     address,
 			Password: password, // no password set
-			DB:       DB, // use default DB
+			DB:       0, // use default DB
 		})
 	}
 

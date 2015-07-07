@@ -58,16 +58,16 @@ func run() error {
 	//These middleware is common to all routes
 	app.Use(negroni.NewRecovery())
 	app.Use(negroni.NewLogger())
-	app.Use(restgate.New(
-		"X-Auth-Key",
-		"X-Auth-Secret",
-		restgate.Static,
-		restgate.Config{
-			Context: C,
-			Key: []string{"12345"},
-			Secret: []string{"secret"},
-		},
-	))
+//	app.Use(restgate.New(
+//		"X-Auth-Key",
+//		"X-Auth-Secret",
+//		restgate.Static,
+//		restgate.Config{
+//			Context: C,
+//			Key: []string{"12345"},
+//			Secret: []string{"secret"},
+//		},
+//	))
 	app.UseHandler(router)
 	http.Handle("/", context.ClearHandler(app))
 

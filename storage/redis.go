@@ -40,20 +40,20 @@ var (
 )
 
 
-func Redis(address string) (*redis.Client) {
+func Redis(address, DB, password string) (*redis.Client) {
 	if redisClient == nil {
 		redisClient = redis.NewClient(&redis.Options{
 			Addr:     address,
-			Password: "", // no password set
-			DB:       0, // use default DB
+			Password: password, // no password set
+			DB:       DB, // use default DB
 		})
 	}
 
 	return redisClient
 }
 
-func NewRedisDriver(address string) (*RedisDriver) {
-	return &RedisDriver{Client:Redis(address)}
+func NewRedisDriver(address, DB, password string) (*RedisDriver) {
+	return &RedisDriver{Client:Redis(address, DB, password)}
 }
 
 func (d *RedisDriver) GetLang(key, lang string) (bag TranslationBag, err error) {

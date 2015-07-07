@@ -32,7 +32,7 @@ var (
 func init() {
 	godotenv.Load()
 	render = r.New(r.Options{})
-	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"))
+	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_DB"), os.Getenv("REDIS_PASS"))
 	translator = t.NewYandexTranslator()
 }
 
@@ -119,7 +119,7 @@ func Save(w http.ResponseWriter, r *http.Request) {
 
 func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag) {
 	bag, err := driver.GetAll(id)
-	log.Println(bag)
+	log.Println(bag, err)
 
 	langs := request.Lang
 	if err == nil {
@@ -146,7 +146,8 @@ func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag) {
 	}
 	container := translator.Translate(request.Text, langs)
 	driver.Save(id, container.Source, request.Text, container.Translations)
-	bag, _ = driver.GetAll(id)
+	bag, err = driver.GetAll(id)
+	log.Println(bag, err)
 	return
 }
 

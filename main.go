@@ -14,61 +14,64 @@ import (
 //	"github.com/pjebs/restgate"
 	r "gopkg.in/unrolled/render.v1"
 
-	"github.com/urakozz/transpoint.io/storage"
+	"./storage"
 	"github.com/satori/go.uuid"
 	"encoding/json"
 	"time"
-	t "github.com/urakozz/transpoint.io/translator"
+	t "./translator"
 )
 
 const ApiVersion = "v1"
 
 var (
 	render *r.Render
+	router *mux.Router
 	driver *storage.RedisDriver
 	translator *t.YandexTranslator
 )
 
+type Action func(w http.ResponseWriter, r *http.Request) (interface{}, int)
+
 func init() {
 	godotenv.Load()
 	render = r.New(r.Options{})
+	router = mux.NewRouter().StrictSlash(true)
 	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_DB"), os.Getenv("REDIS_PASS"))
 	translator = t.NewYandexTranslator()
 }
 
 func main() {
-//	closer.Bind(cleanup)
-//	closer.Checked(run, true)
+	//	closer.Bind(cleanup)
+	//	closer.Checked(run, true)
 	run()
 }
 
 func run() error {
 	port := os.Getenv("PORT")
 
-	router := mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/ping", Ping).Methods("GET")
-	router.HandleFunc("/"+ApiVersion, Default).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/translations", Create).Methods("POST")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id:[a-z0-9-]+}", Save).Methods("POST")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Get).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", GetParticular).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}", Delete).Methods("DELETE")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", DeleteParticular).Methods("DELETE")
+	router.HandleFunc("/ping", wrap(Ping)).Methods("GET")
+	router.HandleFunc("/"+ApiVersion, wrap(Default)).Methods("GET")
+	router.HandleFunc("/"+ApiVersion+"/translations", wrap(Create)).Methods("POST")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id:[a-z0-9-]+}", wrap(Save)).Methods("POST")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}", wrap(Get)).Methods("GET")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", wrap(GetParticular)).Methods("GET")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}", wrap(Delete)).Methods("DELETE")
+	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", wrap(DeleteParticular)).Methods("DELETE")
 
 	app := negroni.New()
 	//These middleware is common to all routes
 	app.Use(negroni.NewRecovery())
 	app.Use(negroni.NewLogger())
-//	app.Use(restgate.New(
-//		"X-Auth-Key",
-//		"X-Auth-Secret",
-//		restgate.Static,
-//		restgate.Config{
-//			Context: C,
-//			Key: []string{"12345"},
-//			Secret: []string{"secret"},
-//		},
-//	))
+	//	app.Use(restgate.New(
+	//		"X-Auth-Key",
+	//		"X-Auth-Secret",
+	//		restgate.Static,
+	//		restgate.Config{
+	//			Context: C,
+	//			Key: []string{"12345"},
+	//			Secret: []string{"secret"},
+	//		},
+	//	))
 	app.UseHandler(router)
 	http.Handle("/", context.ClearHandler(app))
 
@@ -88,37 +91,54 @@ func C(r *http.Request, authenticatedKey string) {
 	context.Set(r, 0, authenticatedKey)
 }
 
-func Ping(w http.ResponseWriter, r *http.Request) {
-	render.JSON(w, http.StatusOK, "PONG")
+func wrap(action Action) (func(http.ResponseWriter, *http.Request)) {
+	return func(w http.ResponseWriter, r *http.Request){
+		v, code := action(w, r)
+
+		callback := r.URL.Query().Get("callback")
+		if callback == "" {
+			render.JSON(w, code, v)
+		} else {
+			render.JSONP(w, code, callback, v)
+		}
+	}
 }
 
-func Default(w http.ResponseWriter, r *http.Request) {
+func Ping(w http.ResponseWriter, r *http.Request) (interface{}, int) {
+	return "PONG", http.StatusOK
+}
+
+func Default(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	methodMap := make(map[string]string)
 	methodMap["translation_map"] = fmt.Sprintf("/%s/%s", ApiVersion, "translations")
-	render.JSON(w, http.StatusOK, methodMap)
+	return methodMap , http.StatusOK
 }
 
-func Create(w http.ResponseWriter, r *http.Request) {
+func Create(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	u1 := uuid.NewV4().String()
 	var request *RequestObject
 	json.NewDecoder(r.Body).Decode(&request)
-	bag := SmartSave(request, u1)
+	bag, _ := SmartSave(request, u1)
 
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1)
-	render.JSON(w, http.StatusCreated, bag)
+	return bag, http.StatusCreated
 }
 
-func Save(w http.ResponseWriter, r *http.Request) {
+func Save(w http.ResponseWriter, r *http.Request) (bag interface{}, status int) {
 	var request *RequestObject
 	json.NewDecoder(r.Body).Decode(&request)
 	id := mux.Vars(r)["id"]
-	bag := SmartSave(request, id)
+	bag, newLng := SmartSave(request, id)
+	status = http.StatusOK
 
-	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
-	render.JSON(w, http.StatusCreated, bag)
+	if newLng > 0{
+		w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
+		status = http.StatusCreated
+	}
+	return
 }
 
-func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag) {
+func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag, newLng int) {
 	bag, err := driver.GetAll(id)
 	log.Println(bag, err)
 
@@ -141,8 +161,8 @@ func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag) {
 		langs = newLangs
 	}
 
-
-	if 0 == len(langs) {
+	newLng = len(langs)
+	if 0 == newLng {
 		return
 	}
 	container := translator.Translate(request.Text, langs)
@@ -152,21 +172,20 @@ func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag) {
 	return
 }
 
-func Get(w http.ResponseWriter, r *http.Request) {
+func Get(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 
 	id := mux.Vars(r)["id"]
 	start := time.Now()
 	bag, err := driver.GetAll(id)
 	log.Printf("Completed in %v", time.Since(start))
 	if nil != err {
-		render.JSON(w, http.StatusNotFound, map[string]string{"error":err.Error()})
-		return
+		return map[string]string{"error":err.Error()}, http.StatusNotFound
 	}
 
-	render.JSON(w, http.StatusOK, bag)
+	return bag, http.StatusOK
 }
 
-func GetParticular(w http.ResponseWriter, r *http.Request) {
+func GetParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	id := mux.Vars(r)["id"]
 	lang := mux.Vars(r)["lang"]
 
@@ -175,23 +194,22 @@ func GetParticular(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Completed in %v", time.Since(start))
 
 	if nil != err {
-		render.JSON(w, http.StatusNotFound, map[string]string{"error":err.Error()})
-		return
+		return map[string]string{"error":err.Error()}, http.StatusNotFound
 	}
 
-	render.JSON(w, http.StatusOK, bag)
+	return bag, http.StatusOK
 }
 
-func Delete(w http.ResponseWriter, r *http.Request) {
+func Delete(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	id := mux.Vars(r)["id"]
 	err := driver.Delete(id)
 	if err != nil {
 		log.Println("Delete", id, err)
 	}
-	w.WriteHeader(http.StatusNoContent)
+	return nil, http.StatusNoContent
 }
 
-func DeleteParticular(w http.ResponseWriter, r *http.Request) {
+func DeleteParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	id := mux.Vars(r)["id"]
 	lang := mux.Vars(r)["lang"]
 	err := driver.DeleteLang(id, lang)
@@ -199,7 +217,7 @@ func DeleteParticular(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("Delete", id, err)
 	}
-	w.WriteHeader(http.StatusNoContent)
+	return nil, http.StatusNoContent
 }
 
 type RequestObject struct {

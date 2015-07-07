@@ -7,3 +7,10 @@ ab -n 10000 -c200 -k http://46.101.248.60:8088/ping
 
  - DO 512 Mb [http]: latency 20ms, 9988rps
  - Heroku [https]: latency 40ms, 2100rps
+
+ 
+ab -n10000 -c200 -k https://transpoint.cleverapps.io/v1/translations/123
+
+ - CleverCloud [https]: latency 1000ms -> 30ms, 1073rps
+ - Heroku [https]: latency 300ms -> 50-70ms, 1172rps
+

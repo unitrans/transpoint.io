@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/context"
 	"github.com/joho/godotenv"
 	"github.com/xlab/closer"
-	"github.com/pjebs/restgate"
+//	"github.com/pjebs/restgate"
 	r "gopkg.in/unrolled/render.v1"
 
 	"github.com/urakozz/transpoint.io/storage"

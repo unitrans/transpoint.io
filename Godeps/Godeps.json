@@ -29,8 +29,26 @@
 			"Rev": "f74619a6f98c2313f588b58c191afcae321d0d3b"
 		},
 		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Rev": "afe1e2ddf0f05b7c29d388a3f8e76cb15c2231ca"
+		},
+		{
 			"ImportPath": "github.com/xlab/closer",
 			"Rev": "9ac1c238130f4dbdffae6242f6a737f90e2178a7"
+		},
+		{
+			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
+			"Rev": "bda20d5067a03094fc6762f7ead53027afac5f28"
+		},
+		{
+			"ImportPath": "gopkg.in/bufio.v1",
+			"Comment": "v1",
+			"Rev": "567b2bfa514e796916c4747494d6ff5132a1dfce"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v3",
+			"Comment": "v3.1.5",
+			"Rev": "2cfe5df7d2593e20161594e4c02ebb305c9ccd8e"
 		},
 		{
 			"ImportPath": "gopkg.in/unrolled/render.v1",

@@ -13,5 +13,5 @@ ab -n10000 -c200 -k https://transpoint.cleverapps.io/v1/translations/123
 
  - CleverCloud [https]: latency 1000ms -> 30ms, 1073rps
  - Heroku [https]: latency 300ms -> 50-70ms, 1172rps
- - Google CE [http]: latency 20-50ms, 1700rps (internal worktime 0.08-0.16ms)
+ - Google CE [http]: latency 20-50ms, 1700rps (internal worktime 0.08-0.16ms) (n1 & f1 are same ... f1 seems to be faster)
 

@@ -1,0 +1,69 @@
+{
+  "push": {
+    "name": "",
+    "vcs": true
+  },
+  "variables": {
+    "do_token": "{{env `DO_TOKEN`}}",
+    "atlas_username": "{{env `ATLAS_USERNAME`}}",
+    "atlas_name": "{{env `ATLAS_NAME`}}"
+  },
+  "provisioners": [
+    {
+      "type": "shell",
+      "only": ["googlecompute"],
+      "inline": [
+        "sudo echo 'deb http://packages.dotdeb.org wheezy all' >> /etc/apt/sources.list",
+        "curl http://www.dotdeb.org/dotdeb.gpg | sudo apt-key add -",
+        "sudo apt-get update",
+        "sudo apt-get install -y redis-server git",
+
+        "wget -O - https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz | sudo tar -xzC /usr/local -f - ",
+        "sudo mkdir -p /usr/local/gopath",
+        "sudo chown -R 775 /usr/local/gopath",
+        "echo '# Setup for golang' | sudo tee /etc/profile.d/golang.sh",
+        "echo 'GOPATH=/usr/local/gopath' | sudo tee -a /etc/profile.d/golang.sh",
+        "echo 'GOBIN=$GOPATH/bin' | sudo tee -a /etc/profile.d/golang.sh",
+        "echo 'PATH=$PATH:$GOBIN:/usr/local/go/bin' | sudo tee -a /etc/profile.d/golang.sh",
+        ". /etc/profile.d/golang.sh"
+      ]
+    },
+    {
+      "type": "shell",
+      "only": ["digitalocean"],
+      "inline": [
+        "sudo apt-get update",
+        "sudo apt-get install -y git python-software-properties",
+        "sudo apt-add-repository ppa:evarlast/golang1.4",
+        "sudo apt-add-repository ppa:chris-lea/redis-server",
+        "sudo apt-get update",
+        "sudo apt-get install -y redis-server golang",
+
+        "sudo mkdir -p /usr/local/gopath",
+        "sudo chown -R 775 /usr/local/gopath",
+        "echo '# Setup for golang' | sudo tee /etc/profile.d/golang.sh",
+        "echo 'GOPATH=/usr/local/gopath' | sudo tee -a /etc/profile.d/golang.sh",
+        "echo 'GOBIN=$GOPATH/bin' | sudo tee -a /etc/profile.d/golang.sh",
+        "echo 'PATH=$PATH:$GOBIN' | sudo tee -a /etc/profile.d/golang.sh",
+        ". /etc/profile.d/golang.sh"
+      ]
+    }
+  ],
+  "builders": [
+    {
+      "type": "googlecompute",
+      "account_file": "transpoint-1faa9312ea05.json",
+      "project_id": "sodium-platform-99915",
+      "source_image": "debian-7-wheezy-v20150603",
+      "zone": "europe-west1-b",
+      "image_name":"packer-trio"
+    },
+    {
+      "type": "digitalocean",
+      "api_token": "{{user `do_token`}}",
+      "image": "ubuntu-14-04-x64",
+      "region": "ams2",
+      "size": "512mb"
+    }
+  ]
+}

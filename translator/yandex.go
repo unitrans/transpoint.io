@@ -22,7 +22,7 @@ type YandexTranslator struct {
 }
 
 func NewYandexTranslator(key string) *YandexTranslator {
-	return &YandexTranslator{initClient(), key}
+	return &YandexTranslator{client:initClient(), key:key}
 }
 
 func (t *YandexTranslator) Translate(text string, langs []string) (*TranslationContainer) {
@@ -66,7 +66,7 @@ func (t *YandexTranslator) doRequests(text string, languages []string, c chan *Y
 }
 
 func (t *YandexTranslator) TranslateOne(text string, language string) (data *YandexResponse){
-	req, _ := http.NewRequest("POST", t.key, bytes.NewBufferString(t.getQueryString(text, language)))
+	req, _ := http.NewRequest("POST", YT_URL, bytes.NewBufferString(t.getQueryString(text, language)))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
@@ -82,7 +82,7 @@ func (t *YandexTranslator) TranslateOne(text string, language string) (data *Yan
 
 func (t *YandexTranslator) getQueryString(text, lang string)string{
 	form := url.Values{}
-	form.Add("key", YT_KEY)
+	form.Add("key", t.key)
 	form.Add("lang", lang)
 	form.Add("text", text)
 	return form.Encode()

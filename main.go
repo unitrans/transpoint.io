@@ -69,6 +69,7 @@ func run() error {
 			Context: C,
 			Key: []string{"12345"},
 			Secret: []string{"secret"},
+			HTTPSProtectionOff:true,
 		},
 	))
 	app.UseHandler(router)

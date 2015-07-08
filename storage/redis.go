@@ -5,7 +5,6 @@ import (
 	"time"
 	"errors"
 	"strings"
-	"log"
 )
 
 type IRedisClient interface {

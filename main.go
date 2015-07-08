@@ -11,14 +11,14 @@ import (
 	"github.com/gorilla/context"
 	"github.com/joho/godotenv"
 //	"github.com/xlab/closer"
-//	"github.com/pjebs/restgate"
+	"github.com/pjebs/restgate"
 	r "gopkg.in/unrolled/render.v1"
 
-	"./storage"
+	"github.com/urakozz/transpoint.io/storage"
 	"github.com/satori/go.uuid"
 	"encoding/json"
 	"time"
-	t "./translator"
+	t "github.com/urakozz/transpoint.io/translator"
 )
 
 const ApiVersion = "v1"
@@ -36,7 +36,7 @@ func init() {
 	godotenv.Load()
 	render = r.New(r.Options{})
 	router = mux.NewRouter().StrictSlash(true)
-	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_DB"), os.Getenv("REDIS_PASS"))
+	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
 	translator = t.NewYandexTranslator()
 }
 
@@ -49,7 +49,6 @@ func main() {
 func run() error {
 	port := os.Getenv("PORT")
 
-	router.HandleFunc("/ping", wrap(Ping)).Methods("GET")
 	router.HandleFunc("/"+ApiVersion, wrap(Default)).Methods("GET")
 	router.HandleFunc("/"+ApiVersion+"/translations", wrap(Create)).Methods("POST")
 	router.HandleFunc("/"+ApiVersion+"/translations/{id:[a-z0-9-]+}", wrap(Save)).Methods("POST")
@@ -62,18 +61,19 @@ func run() error {
 	//These middleware is common to all routes
 	app.Use(negroni.NewRecovery())
 	app.Use(negroni.NewLogger())
-	//	app.Use(restgate.New(
-	//		"X-Auth-Key",
-	//		"X-Auth-Secret",
-	//		restgate.Static,
-	//		restgate.Config{
-	//			Context: C,
-	//			Key: []string{"12345"},
-	//			Secret: []string{"secret"},
-	//		},
-	//	))
+	app.Use(restgate.New(
+		"X-Auth-Key",
+		"X-Auth-Secret",
+		restgate.Static,
+		restgate.Config{
+			Context: C,
+			Key: []string{"12345"},
+			Secret: []string{"secret"},
+		},
+	))
 	app.UseHandler(router)
 	http.Handle("/", context.ClearHandler(app))
+	http.HandleFunc("/ping", wrap(Ping))
 
 	log.Printf("Info: Starting application on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

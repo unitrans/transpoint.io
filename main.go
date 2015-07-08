@@ -11,7 +11,6 @@ import (
 	"github.com/gorilla/context"
 	"github.com/joho/godotenv"
 //	"github.com/xlab/closer"
-	"github.com/pjebs/restgate"
 	r "gopkg.in/unrolled/render.v1"
 
 	"github.com/urakozz/transpoint.io/storage"
@@ -19,6 +18,7 @@ import (
 	"encoding/json"
 	"time"
 	t "github.com/urakozz/transpoint.io/translator"
+	"github.com/urakozz/transpoint.io/middleware"
 )
 
 const ApiVersion = "v1"
@@ -61,15 +61,17 @@ func run() error {
 	//These middleware is common to all routes
 	app.Use(negroni.NewRecovery())
 	app.Use(negroni.NewLogger())
-	app.Use(restgate.New(
+	app.Use(middleware.NewAuthMiddleware(
 		"X-Auth-Key",
 		"X-Auth-Secret",
-		restgate.Static,
-		restgate.Config{
-			Context: C,
-			Key: []string{"12345"},
-			Secret: []string{"secret"},
-			HTTPSProtectionOff:true,
+		middleware.AuthConfig{
+			Context: func(r *http.Request, authenticatedKey string) {
+				context.Set(r, 0, authenticatedKey)
+			},
+			Client: func(key, secret string) bool {
+				sec := driver.Client.HGet("keys", key).Val()
+				return sec == secret
+			},
 		},
 	))
 	app.UseHandler(router)
@@ -93,7 +95,7 @@ func C(r *http.Request, authenticatedKey string) {
 }
 
 func wrap(action Action) (func(http.ResponseWriter, *http.Request)) {
-	return func(w http.ResponseWriter, r *http.Request){
+	return func(w http.ResponseWriter, r *http.Request) {
 		v, code := action(w, r)
 
 		callback := r.URL.Query().Get("callback")
@@ -112,14 +114,15 @@ func Ping(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 func Default(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	methodMap := make(map[string]string)
 	methodMap["translation_map"] = fmt.Sprintf("/%s/%s", ApiVersion, "translations")
-	return methodMap , http.StatusOK
+	return methodMap, http.StatusOK
 }
 
 func Create(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	u1 := uuid.NewV4().String()
+	id := context.Get(r, 0).(string) + "%" + u1
 	var request *RequestObject
 	json.NewDecoder(r.Body).Decode(&request)
-	bag, _ := SmartSave(request, u1)
+	bag, _ := SmartSave(request, id)
 
 	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1)
 	return bag, http.StatusCreated
@@ -128,11 +131,11 @@ func Create(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 func Save(w http.ResponseWriter, r *http.Request) (bag interface{}, status int) {
 	var request *RequestObject
 	json.NewDecoder(r.Body).Decode(&request)
-	id := mux.Vars(r)["id"]
+	id := getId(r)
 	bag, newLng := SmartSave(request, id)
 	status = http.StatusOK
 
-	if newLng > 0{
+	if newLng > 0 {
 		w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
 		status = http.StatusCreated
 	}
@@ -174,8 +177,7 @@ func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag, n
 }
 
 func Get(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-
-	id := mux.Vars(r)["id"]
+	id := getId(r)
 	start := time.Now()
 	bag, err := driver.GetAll(id)
 	log.Printf("Completed in %v", time.Since(start))
@@ -187,7 +189,7 @@ func Get(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 }
 
 func GetParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := mux.Vars(r)["id"]
+	id := getId(r)
 	lang := mux.Vars(r)["lang"]
 
 	start := time.Now()
@@ -202,7 +204,7 @@ func GetParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := mux.Vars(r)["id"]
+	id := getId(r)
 	err := driver.Delete(id)
 	if err != nil {
 		log.Println("Delete", id, err)
@@ -211,7 +213,7 @@ func Delete(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 }
 
 func DeleteParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := mux.Vars(r)["id"]
+	id := getId(r)
 	lang := mux.Vars(r)["lang"]
 	err := driver.DeleteLang(id, lang)
 
@@ -219,6 +221,12 @@ func DeleteParticular(w http.ResponseWriter, r *http.Request) (interface{}, int)
 		log.Println("Delete", id, err)
 	}
 	return nil, http.StatusNoContent
+}
+
+func getId(r *http.Request) string {
+	id := mux.Vars(r)["id"]
+	key := context.Get(r, 0).(string)
+	return key+"%"+id
 }
 
 type RequestObject struct {

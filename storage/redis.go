@@ -4,6 +4,8 @@ import (
 	"gopkg.in/redis.v3"
 	"time"
 	"errors"
+	"strings"
+	"log"
 )
 
 type IRedisClient interface {
@@ -26,6 +28,15 @@ func (t *TranslationBag) Langs() []string{
 		langs = append(langs, k)
 	}
 	return langs
+}
+
+func (t *TranslationBag) SetId(id string){
+	split := strings.Split(id, "%")
+	id = split[0]
+	if len(split) > 1 {
+		id = strings.Join(split[1:], "%")
+	}
+	t.Id = id
 }
 
 type RedisDriver struct {
@@ -65,7 +76,7 @@ func (d *RedisDriver) GetLang(key, lang string) (bag TranslationBag, err error) 
 		err = NotFoundError
 		return
 	}
-	bag.Id = key
+	bag.SetId(key)
 	bag.Source = data["source"]
 	bag.Original = data["original"]
 	bag.Translations = map[string]string{lang:data[lang]}
@@ -82,7 +93,7 @@ func (d *RedisDriver) GetAll(key string) (bag TranslationBag, err error) {
 		return
 	}
 
-	bag.Id = key
+	bag.SetId(key)
 	bag.Source = data["source"]
 	bag.Original = data["original"]
 	delete(data, "source")

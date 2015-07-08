@@ -18,10 +18,11 @@ const YT_URL = "https://translate.yandex.net/api/v1.5/tr.json/translate"
 
 type YandexTranslator struct {
 	client *http.Client
+	key string
 }
 
-func NewYandexTranslator() *YandexTranslator {
-	return &YandexTranslator{client:initClient()}
+func NewYandexTranslator(key string) *YandexTranslator {
+	return &YandexTranslator{initClient(), key}
 }
 
 func (t *YandexTranslator) Translate(text string, langs []string) (*TranslationContainer) {
@@ -65,7 +66,7 @@ func (t *YandexTranslator) doRequests(text string, languages []string, c chan *Y
 }
 
 func (t *YandexTranslator) TranslateOne(text string, language string) (data *YandexResponse){
-	req, _ := http.NewRequest("POST", YT_URL, bytes.NewBufferString(t.getQueryString(text, language)))
+	req, _ := http.NewRequest("POST", t.key, bytes.NewBufferString(t.getQueryString(text, language)))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)

@@ -37,7 +37,7 @@ func init() {
 	render = r.New(r.Options{})
 	router = mux.NewRouter().StrictSlash(true)
 	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
-	translator = t.NewYandexTranslator()
+	translator = t.NewYandexTranslator(os.Getenv("Y_TR_KEY"))
 }
 
 func main() {

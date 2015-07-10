@@ -10,6 +10,7 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/context"
 	"github.com/joho/godotenv"
+    "github.com/davecheney/profile"
 //	"github.com/xlab/closer"
 	r "gopkg.in/unrolled/render.v1"
 
@@ -28,6 +29,7 @@ var (
 	router *mux.Router
 	driver *storage.RedisDriver
 	translator *t.YandexTranslator
+	profiler interface { Stop() }
 )
 
 type Action func(w http.ResponseWriter, r *http.Request) (interface{}, int)
@@ -77,6 +79,16 @@ func run() error {
 	app.UseHandler(router)
 	http.Handle("/", context.ClearHandler(app))
 	http.HandleFunc("/ping", wrap(Ping))
+
+	cfg := profile.Config{
+		MemProfile:     true,
+		CPUProfile:     true,
+		ProfilePath:    ".",  // store profiles in current directory
+	}
+
+	// p.Stop() must be called before the program exits to
+	// ensure profiling information is written to disk.
+	profiler = profile.Start(&cfg)
 
 	log.Printf("Info: Starting application on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

@@ -3,32 +3,26 @@ package main
 import (
 	"os"
 	"log"
-	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	"github.com/codegangsta/negroni"
 	"github.com/gorilla/context"
+	"github.com/gorilla/sessions"
+	"github.com/gorilla/securecookie"
 	"github.com/joho/godotenv"
-    "github.com/davecheney/profile"
+	"github.com/davecheney/profile"
 //	"github.com/xlab/closer"
 	r "gopkg.in/unrolled/render.v1"
 
 	"github.com/urakozz/transpoint.io/storage"
-	"github.com/satori/go.uuid"
-	"encoding/json"
-	"time"
 	t "github.com/urakozz/transpoint.io/translator"
-	"github.com/urakozz/transpoint.io/middleware"
 )
 
-const ApiVersion = "v1"
 
 var (
 	render *r.Render
-	router *mux.Router
 	driver *storage.RedisDriver
 	translator *t.YandexTranslator
+	cookieStore *sessions.CookieStore
 	profiler interface { Stop() }
 )
 
@@ -37,9 +31,12 @@ type Action func(w http.ResponseWriter, r *http.Request) (interface{}, int)
 func init() {
 	godotenv.Load()
 	render = r.New(r.Options{})
-	router = mux.NewRouter().StrictSlash(true)
 	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
 	translator = t.NewYandexTranslator(os.Getenv("Y_TR_KEY"))
+	if "" == os.Getenv("APP_SECRET") {
+		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))
+	}
+	cookieStore = sessions.NewCookieStore([]byte(os.Getenv("APP_SECRET")))
 }
 
 func main() {
@@ -51,44 +48,11 @@ func main() {
 func run() error {
 	port := os.Getenv("PORT")
 
-	router.HandleFunc("/"+ApiVersion, wrap(Default)).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/translations", wrap(Create)).Methods("POST")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id:[a-z0-9-]+}", wrap(Save)).Methods("POST")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}", wrap(Get)).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", wrap(GetParticular)).Methods("GET")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}", wrap(Delete)).Methods("DELETE")
-	router.HandleFunc("/"+ApiVersion+"/translations/{id}/{lang:[a-z]{2}}", wrap(DeleteParticular)).Methods("DELETE")
+	http.Handle("/v1", context.ClearHandler(ApiRouter()))
+	http.HandleFunc("/ping", ApiPing())
+	http.Handle("/webapp", WebRouter())
 
-	app := negroni.New()
-	//These middleware is common to all routes
-	app.Use(negroni.NewRecovery())
-	app.Use(negroni.NewLogger())
-	app.Use(middleware.NewAuthMiddleware(
-		"X-Auth-Key",
-		"X-Auth-Secret",
-		middleware.AuthConfig{
-			Context: func(r *http.Request, authenticatedKey string) {
-				context.Set(r, 0, authenticatedKey)
-			},
-			Client: func(key, secret string) bool {
-				sec := driver.Client.HGet("keys", key).Val()
-				return sec == secret
-			},
-		},
-	))
-	app.UseHandler(router)
-	http.Handle("/", context.ClearHandler(app))
-	http.HandleFunc("/ping", wrap(Ping))
-
-	cfg := profile.Config{
-		MemProfile:     true,
-		CPUProfile:     true,
-		ProfilePath:    ".",  // store profiles in current directory
-	}
-
-	// p.Stop() must be called before the program exits to
-	// ensure profiling information is written to disk.
-	profiler = profile.Start(&cfg)
+	initProfiler()
 
 	log.Printf("Info: Starting application on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -102,150 +66,17 @@ func cleanup() {
 	log.Print("Info: Gracefully closing application")
 }
 
-func C(r *http.Request, authenticatedKey string) {
-	context.Set(r, 0, authenticatedKey)
-}
-
-func wrap(action Action) (func(http.ResponseWriter, *http.Request)) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		v, code := action(w, r)
-
-		callback := r.URL.Query().Get("callback")
-		if callback == "" {
-			render.JSON(w, code, v)
-		} else {
-			render.JSONP(w, code, callback, v)
-		}
-	}
-}
-
-func Ping(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	return "PONG", http.StatusOK
-}
-
-func Default(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	methodMap := make(map[string]string)
-	methodMap["translation_map"] = fmt.Sprintf("/%s/%s", ApiVersion, "translations")
-	return methodMap, http.StatusOK
-}
-
-func Create(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	u1 := uuid.NewV4().String()
-	id := context.Get(r, 0).(string) + "%" + u1
-	var request *RequestObject
-	json.NewDecoder(r.Body).Decode(&request)
-	bag, _ := SmartSave(request, id)
-
-	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1)
-	return bag, http.StatusCreated
-}
-
-func Save(w http.ResponseWriter, r *http.Request) (bag interface{}, status int) {
-	var request *RequestObject
-	json.NewDecoder(r.Body).Decode(&request)
-	id := getId(r)
-	bag, newLng := SmartSave(request, id)
-	status = http.StatusOK
-
-	if newLng > 0 {
-		w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
-		status = http.StatusCreated
-	}
-	return
-}
-
-func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag, newLng int) {
-	bag, err := driver.GetAll(id)
-	log.Println(bag, err)
-
-	langs := request.Lang
-	if err == nil {
-		var newLangs []string
-		if bag.Original == request.Text {
-			for _, lang := range langs {
-				if _, exists := bag.Translations[lang]; !exists {
-					newLangs = append(newLangs, lang)
-				}
-			}
-		} else {
-			newLangs = langs
-			for lang, _ := range bag.Translations {
-				newLangs = append(newLangs, lang)
-			}
-		}
-
-		langs = newLangs
+func initProfiler() {
+	cfg := profile.Config{
+		MemProfile:     true,
+		CPUProfile:     true,
+		ProfilePath:    ".", // store profiles in current directory
 	}
 
-	newLng = len(langs)
-	if 0 == newLng {
-		return
-	}
-	container := translator.Translate(request.Text, langs)
-	driver.Save(id, container.Source, request.Text, container.Translations)
-	bag, err = driver.GetAll(id)
-	log.Println(bag, err)
-	return
+	// p.Stop() must be called before the program exits to
+	// ensure profiling information is written to disk.
+	profiler = profile.Start(&cfg)
 }
 
-func Get(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := getId(r)
-	start := time.Now()
-	bag, err := driver.GetAll(id)
-	log.Printf("Completed in %v", time.Since(start))
-	if nil != err {
-		return map[string]string{"error":err.Error()}, http.StatusNotFound
-	}
-
-	return bag, http.StatusOK
-}
-
-func GetParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := getId(r)
-	lang := mux.Vars(r)["lang"]
-
-	start := time.Now()
-	bag, err := driver.GetLang(id, lang)
-	log.Printf("Completed in %v", time.Since(start))
-
-	if nil != err {
-		return map[string]string{"error":err.Error()}, http.StatusNotFound
-	}
-
-	return bag, http.StatusOK
-}
-
-func Delete(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := getId(r)
-	err := driver.Delete(id)
-	if err != nil {
-		log.Println("Delete", id, err)
-	}
-	return nil, http.StatusNoContent
-}
-
-func DeleteParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
-	id := getId(r)
-	lang := mux.Vars(r)["lang"]
-	err := driver.DeleteLang(id, lang)
-
-	if err != nil {
-		log.Println("Delete", id, err)
-	}
-	return nil, http.StatusNoContent
-}
-
-func getId(r *http.Request) string {
-	id := mux.Vars(r)["id"]
-	key := context.Get(r, 0).(string)
-	return key+"%"+id
-}
-
-type RequestObject struct {
-	Id     string `json:"id"`
-	Text   string `json:"text"`
-	Lang   []string `json:"lang"`
-	Source string `json:"source"`
-}
 
 

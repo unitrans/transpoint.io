@@ -3,8 +3,8 @@
 package translator
 import (
 	"net/http"
-	"net"
 	"time"
+	"github.com/facebookgo/httpcontrol"
 )
 
 type Translator interface {
@@ -16,20 +16,16 @@ type TranslationBag map[string]string
 
 type TranslationContainer struct {
 	Translations TranslationBag
-	Source string
+	Source       string
 }
 
 var client *http.Client
 
 func initClient() (*http.Client) {
 	if nil == client {
-		transport := &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			Dial: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: time.Minute,
-			}).Dial,
-			TLSHandshakeTimeout: 10 * time.Second,
+		transport := &httpcontrol.Transport{
+			RequestTimeout: time.Minute,
+			MaxTries: 3,
 		}
 
 		client = &http.Client{

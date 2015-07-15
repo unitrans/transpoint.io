@@ -16,37 +16,41 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/context"
 	"github.com/goods/httpbuf"
+	"log"
+	"errors"
+	"encoding/json"
 )
 
 const (
-	TokenLength int           = 32
+	TokenLength int = 32
 	TtlDuration time.Duration = 20 * time.Minute
 )
 
 type WebContext struct {
-	Session  *sessions.Session
-	User     *User
+	Session *sessions.Session
+	User    *User
 }
 type WebAction func(w http.ResponseWriter, r *http.Request, ctx *WebContext) (error)
 
-func (a WebAction) ServeHTTP(w http.ResponseWriter, r *http.Request){
+func (a WebAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	buf := new(httpbuf.Buffer)
 	ctx := &WebContext{
 		Session: context.Get(r, "session").(*sessions.Session),
+		User: context.Get(r, "user").(*User),
 	}
 	err := a(buf, r, ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	ctx.Session.Save(r, w)
+
 	buf.Apply(w)
 }
 
 type User struct {
-	Id        int64       `db:"id"`
-	Email     string      `db:"email"`
-	Token     string      `db:"token"`
-	Ttl       time.Time   `db:"ttl"`
+	Id    string      `json:"id"`
+	Email string      `json:"email"`
+	Token string      `json:"token"`
+	Ttl   time.Time   `json:"ttl"`
 }
 
 // RefreshToken refreshes Ttl and Token for the User.
@@ -68,6 +72,9 @@ func (u *User) IsValidToken(token string) bool {
 	}
 	return subtle.ConstantTimeCompare([]byte(u.Token), []byte(token)) == 1
 }
+func (u *User) IsLogin() bool {
+	return u.Id != ""
+}
 
 func WebRouter() http.Handler {
 	r := mux.NewRouter()
@@ -75,14 +82,38 @@ func WebRouter() http.Handler {
 	r.Handle("/webapp", WebAction(WebIndex)).Methods("GET")
 
 	app := negroni.New()
-	app.Use(middleware.NewWebAuth(cookieStore))
+	app.Use(middleware.NewSession(cookieStore))
+	app.Use(middleware.NewCsrfMiddleware("csrf"))
+	app.Use(middleware.NewUserMiddleware(&middleware.UserMiddlewareConfig{
+		Accessor:func(userId string) (res string, err error) {
+			if userId == "11q" {
+				json, _ := json.Marshal(&User{Id:"11q", Email:"urakozz@me.com"})
+				res = string(json)
+				return
+			}
+			res, err = driver.Client.HGet("user", userId).Result()
+			if res == "" {
+				err = errors.New("not found")
+			}
+			return
+		},
+		Prototype: &User{},
+	}))
 	app.UseHandler(r)
 	return app
 }
 
 func WebIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 	session := context.Get(r, "session").(*sessions.Session)
+	csrf := context.Get(r, "csrf").(string)
+	user := context.Get(r, "user")
+	log.Println(session.Values)
+	log.Println(csrf)
+	log.Println(user)
+	log.Println(ctx.User)
+	log.Println(ctx.Session)
 	session.Values["web"] = "some"
+	session.Values["user"] = "11q"
 	var homeTempl = template.Must(template.ParseFiles("templates/index.html"))
 	homeTempl.Execute(w, r.Host)
 

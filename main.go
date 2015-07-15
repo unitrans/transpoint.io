@@ -36,7 +36,15 @@ func init() {
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))
 	}
-	cookieStore = sessions.NewCookieStore([]byte(os.Getenv("APP_SECRET")))
+	cookieStore = &sessions.CookieStore{
+		Codecs: securecookie.CodecsFromPairs([]byte(os.Getenv("APP_SECRET"))),
+		Options: &sessions.Options{
+			Path:   "/",
+			MaxAge: 86400 * 30 * 10,
+//			Secure:true,
+			HttpOnly: true,
+		},
+	}
 }
 
 func main() {

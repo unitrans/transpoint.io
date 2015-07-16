@@ -34,7 +34,7 @@ func ApiRouter() http.Handler {
 
 	app := negroni.New()
 //	app.Use(negroni.NewRecovery())
-//	app.Use(negroni.NewLogger())
+	app.Use(negroni.NewLogger())
 	app.Use(middleware.NewAuthMiddleware(
 		"X-Auth-Key",
 		"X-Auth-Secret",

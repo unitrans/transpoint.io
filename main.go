@@ -57,8 +57,10 @@ func run() error {
 	port := os.Getenv("PORT")
 
 	http.Handle("/v1", context.ClearHandler(ApiRouter()))
+	http.Handle("/v1/", context.ClearHandler(ApiRouter()))
 	http.HandleFunc("/ping", ApiPing())
-	http.Handle("/webapp", WebRouter())
+	http.Handle("/webapp", context.ClearHandler(WebRouter()))
+	http.Handle("/webapp/", context.ClearHandler(WebRouter()))
 
 	initProfiler()
 

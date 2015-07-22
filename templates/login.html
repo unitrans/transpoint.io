@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{.Title}} - Transpoint.io</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/material-fullpalette.css">
+</head>
+<body>
+
+<h1>Hi there</h1>
+
+<p>
+    {{.Session}}
+</p>
+<p>
+    {{.user}}
+</p>
+<h3>Login</h3>
+<form method="post" action="/webapp/login">
+    <input type="text" name="username" placeholder="Login"/>
+    <input type="text" name="pass" placeholder="Pass"/>
+    <input type="hidden" name="csrf_token" value="{{ .token }}">
+    <input type="submit" value="Login">
+</form>
+<h3>Register</h3>
+<form method="post" action="/webapp/register">
+    <input type="text" name="username"/>
+    <input type="text" name="pass"/>
+    <input type="hidden" name="csrf_token" value="{{ .token }}">
+    <input type="submit" value="Register">
+</form>
+
+<script src="https://yastatic.net/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/js/material.min.js"></script>
+</body>
+</html>

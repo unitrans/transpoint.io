@@ -16,9 +16,12 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/context"
 	"github.com/goods/httpbuf"
-	"log"
-	"errors"
+
+
 	"encoding/json"
+	"fmt"
+	"strings"
+	"log"
 )
 
 const (
@@ -29,6 +32,7 @@ const (
 type WebContext struct {
 	Session *sessions.Session
 	User    *User
+	CSRF    string
 }
 type WebAction func(w http.ResponseWriter, r *http.Request, ctx *WebContext) (error)
 
@@ -37,6 +41,7 @@ func (a WebAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := &WebContext{
 		Session: context.Get(r, "session").(*sessions.Session),
 		User: context.Get(r, "user").(*User),
+		CSRF: context.Get(r, "csrf").(string),
 	}
 	err := a(buf, r, ctx)
 	if err != nil {
@@ -50,6 +55,7 @@ type User struct {
 	Id    string      `json:"id"`
 	Email string      `json:"email"`
 	Token string      `json:"token"`
+	Pass  string      `json:"pass"`
 	Ttl   time.Time   `json:"ttl"`
 }
 
@@ -80,42 +86,111 @@ func WebRouter() http.Handler {
 	r := mux.NewRouter()
 
 	r.Handle("/webapp", WebAction(WebIndex)).Methods("GET")
+	r.Handle("/webapp/login", WebAction(WebLogin)).Methods("POST")
+	r.Handle("/webapp/register", WebAction(WebRegister)).Methods("POST")
+	r.Handle("/webapp/logout", WebAction(WebLogout))
+	r.Handle("/webapp/panel", WebAction(WebPanelIndex)).Methods("GET")
 
 	app := negroni.New()
 	app.Use(middleware.NewSession(cookieStore))
 	app.Use(middleware.NewCsrfMiddleware("csrf"))
 	app.Use(middleware.NewUserMiddleware(&middleware.UserMiddlewareConfig{
-		Accessor:func(userId string) (res string, err error) {
-			if userId == "11q" {
-				json, _ := json.Marshal(&User{Id:"11q", Email:"urakozz@me.com"})
-				res = string(json)
-				return
+		Authenticator:func(userId string) (interface{}, error) {
+			userObj := &User{}
+			str, err := driver.Client.HGet("user", userId).Result()
+			if err != nil {
+				return nil, err
 			}
-			res, err = driver.Client.HGet("user", userId).Result()
-			if res == "" {
-				err = errors.New("not found")
-			}
-			return
+			json.Unmarshal([]byte(str), &userObj)
+			return userObj, nil
 		},
-		Prototype: &User{},
 	}))
+	app.UseFunc(func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+		if iface := context.Get(r, "user"); iface == nil {
+			user := new(User)
+			context.Set(r, "user", user)
+		}
+		next(w, r)
+	})
+	app.UseFunc(func(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+		if 0 == strings.Index(r.URL.Path, "/webapp/panel") && !context.Get(r, "user").(*User).IsLogin() {
+			http.Redirect(w, r, "/webapp", http.StatusFound)
+			return
+		}
+		if r.URL.Path == "/webapp" && context.Get(r, "user").(*User).IsLogin(){
+			http.Redirect(w, r, "/webapp/panel", http.StatusFound)
+			return
+		}
+		next(w, r)
+	})
 	app.UseHandler(r)
 	return app
 }
 
 func WebIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
-	session := context.Get(r, "session").(*sessions.Session)
-	csrf := context.Get(r, "csrf").(string)
-	user := context.Get(r, "user")
-	log.Println(session.Values)
-	log.Println(csrf)
-	log.Println(user)
-	log.Println(ctx.User)
-	log.Println(ctx.Session)
-	session.Values["web"] = "some"
-	session.Values["user"] = "11q"
-	var homeTempl = template.Must(template.ParseFiles("templates/index.html"))
-	homeTempl.Execute(w, r.Host)
+
+	var homeTempl = template.Must(template.ParseFiles("templates/login.html"))
+	homeTempl.Execute(w, map[string]string{"Title":"Some title", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+
+	return
+}
+
+func WebLogin(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+	session := ctx.Session
+
+	r.ParseForm()
+	username := r.Form.Get("username")
+	pass := r.Form.Get("pass")
+
+	res, err := driver.Client.HGet("user", username).Result()
+	if res != "" && err == nil {
+		user := &User{}
+		err = json.Unmarshal([]byte(res), user)
+		if nil == err && user.Pass == pass {
+			session.Values["user"] = username
+		}
+	}
+
+	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
+
+	return
+}
+
+func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+
+	r.ParseForm()
+	username := r.Form.Get("username")
+	pass := r.Form.Get("pass")
+
+	res, err := driver.Client.HGet("user", username).Result()
+	log.Println(res, err, "reg")
+	if res == "" {
+		user := &User{Id:username, Pass:pass}
+		bytes, _ := json.Marshal(user)
+		driver.Client.HSet("user", username, string(bytes))
+		res, err = driver.Client.HGet("user", username).Result()
+		log.Println(res)
+	}
+
+	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
+
+	return
+}
+
+func WebLogout(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+	delete(ctx.Session.Values, "user")
+
+	http.Redirect(w, r, "/webapp", http.StatusFound)
+
+	return
+}
+
+func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+
+
+	var homeTempl = template.Must(template.ParseFiles("templates/panel-index.html"))
+	homeTempl.Execute(w, map[string]string{"Title":"Panel", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+
 
 	return
 }

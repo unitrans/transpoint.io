@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/context"
 	"github.com/justinas/nosurf"
 	"github.com/goods/httpbuf"
-	"encoding/json"
 	"log"
 )
 
@@ -79,8 +78,7 @@ type UserMiddleware struct {
 }
 
 type UserMiddlewareConfig struct {
-	Prototype interface{}
-	Accessor  func(userId string) (string, error)
+	Authenticator func(userId string) (interface{}, error)
 }
 
 func NewUserMiddleware(c *UserMiddlewareConfig) *UserMiddleware {
@@ -89,15 +87,15 @@ func NewUserMiddleware(c *UserMiddlewareConfig) *UserMiddleware {
 
 func (m *UserMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	s := context.Get(r, "session").(*sessions.Session)
-	userObj := m.c.Prototype
+
 	if id, ok := s.Values["user"]; ok {
-		if user, err := m.c.Accessor(id.(string)); err == nil {
-			json.Unmarshal([]byte(user), &userObj)
+		if user, err := m.c.Authenticator(id.(string)); err == nil {
+			context.Set(r, "user", user)
 		} else {
 			http.Error(w, "User not found or data storage is not available", http.StatusBadRequest)
 			return
 		}
 	}
-	context.Set(r, "user", userObj)
+
 	next(w, r)
 }

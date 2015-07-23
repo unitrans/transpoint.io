@@ -27,11 +27,13 @@ to keep your client decoupled from implementation details.
 
 ## Group Authentication
 
-To Authenticate you need recieve an auth_token in your [translatepoint.io](https://translatepoint.io) private account.
+To Authenticate you need recieve key and secret in your [translatepoint.io](https://translatepoint.io) private account.
 
 You should pass that token as a part of every request in header:
 
-**X-Auth-Token: 123.qweqw.987987987**
+**X-Auth-Key: 15172965948649192219.45f01f4**
+
+**X-Auth-Secret: 7459.11876316980405129161.df1dd60bb7e3**
 
 ## Group Translation
 
@@ -56,7 +58,8 @@ Id will be generated automaticly (uuid4)
 + Request (application/json)
     + Headers 
     
-            X-Auth-Token: 123.qweqw.987987987
+            X-Auth-Key: 15172965948649192219.45f01f4
+            X-Auth-Secret: 7459.11876316980405129161.df1dd60bb7e3
 
     + Body
     
@@ -119,7 +122,8 @@ Id will be generated automaticly (uuid4)
 + Request (application/json)
     + Headers 
     
-            X-Auth-Token: 123.qweqw.987987987
+            X-Auth-Key: 15172965948649192219.45f01f4
+            X-Auth-Secret: 7459.11876316980405129161.df1dd60bb7e3
 
     + Body
     
@@ -154,7 +158,8 @@ Get Translations by given Id
 + Request (application/json)
     + Headers 
     
-            X-Auth-Token: 123.qweqw.987987987
+            X-Auth-Key: 15172965948649192219.45f01f4
+            X-Auth-Secret: 7459.11876316980405129161.df1dd60bb7e3
 
 + Response 200 (application/json)
 
@@ -179,7 +184,8 @@ This action is deleting translation object.
 + Request (application/json)
     + Headers 
     
-            X-Auth-Token: 123.qweqw.987987987
+            X-Auth-Key: 15172965948649192219.45f01f4
+            X-Auth-Secret: 7459.11876316980405129161.df1dd60bb7e3
 
 + Response 204
 
@@ -196,7 +202,9 @@ This action is deleting only translation for the specified language.
 + Request (application/json)
     + Headers 
     
-            X-Auth-Token: 123.qweqw.987987987
+            X-Auth-Key: 15172965948649192219.45f01f4
+            X-Auth-Secret: 7459.11876316980405129161.df1dd60bb7e3
+
 + Response 204
 
 

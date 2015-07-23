@@ -9,10 +9,10 @@ import (
 	"github.com/urakozz/transpoint.io/middleware"
 	"html/template"
 	"time"
-	"io"
-	"crypto/rand"
-	"encoding/base64"
-	"crypto/subtle"
+//	"io"
+//	"crypto/rand"
+//	"encoding/base64"
+//	"crypto/subtle"
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/context"
 	"github.com/goods/httpbuf"
@@ -34,6 +34,7 @@ type WebContext struct {
 	User    *User
 	CSRF    string
 }
+
 type WebAction func(w http.ResponseWriter, r *http.Request, ctx *WebContext) (error)
 
 func (a WebAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -56,33 +57,48 @@ type User struct {
 	Email string      `json:"email"`
 	Token string      `json:"token"`
 	Pass  string      `json:"pass"`
-	Ttl   time.Time   `json:"ttl"`
 }
 
-// RefreshToken refreshes Ttl and Token for the User.
-func (u *User) RefreshToken() error {
-	token := make([]byte, TokenLength)
-	if _, err := io.ReadFull(rand.Reader, token); err != nil {
-		return err
-	}
-	u.Token = base64.URLEncoding.EncodeToString(token)
-	u.Ttl = time.Now().UTC().Add(TtlDuration)
-	return nil
-}
-
-// IsValidToken returns a bool indicating that the User's current token hasn't
-// expired and that the provided token is valid.
-func (u *User) IsValidToken(token string) bool {
-	if u.Ttl.Before(time.Now().UTC()) {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(u.Token), []byte(token)) == 1
-}
+//// RefreshToken refreshes Ttl and Token for the User.
+//func (u *User) RefreshToken() error {
+//	token := make([]byte, TokenLength)
+//	if _, err := io.ReadFull(rand.Reader, token); err != nil {
+//		return err
+//	}
+//	u.Token = base64.URLEncoding.EncodeToString(token)
+//	u.Ttl = time.Now().UTC().Add(TtlDuration)
+//	return nil
+//}
+//
+//// IsValidToken returns a bool indicating that the User's current token hasn't
+//// expired and that the provided token is valid.
+//func (u *User) IsValidToken(token string) bool {
+//	if u.Ttl.Before(time.Now().UTC()) {
+//		return false
+//	}
+//	return subtle.ConstantTimeCompare([]byte(u.Token), []byte(token)) == 1
+//}
 func (u *User) IsLogin() bool {
 	return u.Id != ""
 }
 
+type TemplateMap map[string]*template.Template
+var Templates TemplateMap
+
+func webInit(){
+	parseFiles := func(name string)(*template.Template){
+		base := "templates/"
+		partials := "templates/partials/"
+		mainTpl := base + name + ".html"
+		return template.Must(template.ParseFiles(mainTpl, partials+"header.html",  partials + "footer.html"))
+	}
+	Templates = make(TemplateMap)
+	Templates["login"] = parseFiles("login")
+	Templates["panel-index"] = parseFiles("panel-index")
+}
+
 func WebRouter() http.Handler {
+	webInit()
 	r := mux.NewRouter()
 
 	r.Handle("/webapp", WebAction(WebIndex)).Methods("GET")
@@ -129,8 +145,7 @@ func WebRouter() http.Handler {
 
 func WebIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 
-	var homeTempl = template.Must(template.ParseFiles("templates/login.html"))
-	homeTempl.Execute(w, map[string]string{"Title":"Some title", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+	Templates["login"].Execute(w, map[string]string{"Title":"Some title", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
 
 	return
 }
@@ -187,10 +202,7 @@ func WebLogout(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err err
 
 func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 
-
-	var homeTempl = template.Must(template.ParseFiles("templates/panel-index.html"))
-	homeTempl.Execute(w, map[string]string{"Title":"Panel", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
-
+	Templates["panel-index"].Execute(w, map[string]string{"Title":"Panel", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
 
 	return
 }

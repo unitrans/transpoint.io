@@ -3,9 +3,25 @@
 	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
+			"ImportPath": "github.com/OneOfOne/xxhash/native",
+			"Rev": "263987eca75324e0ef9f96cf8fd62d23e791f863"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1-70-gc7477ad",
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
+		},
+		{
+			"ImportPath": "github.com/davecheney/profile",
+			"Rev": "c29d1a1565bca9fbeed5eed0e5d52ba78469a16b"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/httpcontrol",
+			"Rev": "ccde4420e1fee9af5da365cb76075b95683f39a6"
+		},
+		{
+			"ImportPath": "github.com/goods/httpbuf",
+			"Rev": "5709e9bb814c932e48b6737e1cf214a6522453a2"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -16,25 +32,30 @@
 			"Rev": "47e8f450ef38c857cdd922ec08862ca9d65a1c6d"
 		},
 		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "e8ab2fa5d114bbc278da9bd20dc67553bed7a3c4"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "f61c3ec2cf65d69e7efedfd4d060fe128882c951"
+		},
+		{
 			"ImportPath": "github.com/joho/godotenv",
 			"Comment": "v1-8-g443e926",
 			"Rev": "443e926da0d793d3b3f32118b1e4ba52ada26503"
+		},
+		{
+			"ImportPath": "github.com/justinas/nosurf",
+			"Comment": "0.1-50-g45adcfc",
+			"Rev": "45adcfcaf70610a5934db447ffe0ea9d13462c9e"
 		},
 		{
 			"ImportPath": "github.com/pjebs/jsonerror",
 			"Rev": "236f3c18307ad38e59fc3f85e7bde1bef6233782"
 		},
 		{
-			"ImportPath": "github.com/pjebs/restgate",
-			"Rev": "f74619a6f98c2313f588b58c191afcae321d0d3b"
-		},
-		{
 			"ImportPath": "github.com/satori/go.uuid",
 			"Rev": "afe1e2ddf0f05b7c29d388a3f8e76cb15c2231ca"
-		},
-		{
-			"ImportPath": "github.com/xlab/closer",
-			"Rev": "9ac1c238130f4dbdffae6242f6a737f90e2178a7"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",

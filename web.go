@@ -169,6 +169,7 @@ func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err e
 		bytes, _ := json.Marshal(user)
 		driver.Client.HSet("user", username, string(bytes))
 		res, err = driver.Client.HGet("user", username).Result()
+		ctx.Session.Values["user"] = username
 		log.Println(res)
 	}
 

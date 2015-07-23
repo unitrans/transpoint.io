@@ -1,7 +1,27 @@
 {{template "header"}}
 
 <h1>Logged in , gangsta shit</h1>
+
+<p>
+    <a href="/webapp/logout">Logout</a>
+</p>
 <address>
     {{.user}}
 </address>
+
+<h3>
+    Generate a key pair
+</h3>
+<form method="post" action="/webapp/panel/keys">
+    <input type="hidden" name="csrf_token" value="{{ .token }}">
+    <input type="submit" value="Generate">
+</form>
+<h3>
+    List here
+</h3>
+{{range $key, $element := .keys}}
+<div><p>key - {{$key}}</p><p>secret - {{$element}}</p></div>
+{{else}}
+<p>No keys</p>
+{{end}}
 {{template "footer"}}

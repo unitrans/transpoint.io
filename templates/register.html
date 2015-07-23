@@ -1,0 +1,24 @@
+{{template "header"}}
+
+
+<h1>Hi there, register now</h1>
+
+<p>
+    {{.Session}}
+</p>
+<p>
+    {{.user}}
+</p>
+
+<h3>Register</h3>
+<p>
+    <a href="/webapp">Login</a>
+</p>
+<form method="post" action="/webapp/register">
+    <input type="text" name="username"/>
+    <input type="text" name="pass"/>
+    <input type="hidden" name="csrf_token" value="{{ .token }}">
+    <input type="submit" value="Register">
+</form>
+
+{{template "footer"}}

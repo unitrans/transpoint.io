@@ -4,24 +4,24 @@ package main
 
 import (
 	"net/http"
-	"github.com/codegangsta/negroni"
-	"github.com/gorilla/mux"
 	"github.com/urakozz/transpoint.io/middleware"
 	"html/template"
 	"time"
-//	"io"
-//	"crypto/rand"
-//	"encoding/base64"
-//	"crypto/subtle"
+
+	"github.com/codegangsta/negroni"
 	"github.com/gorilla/sessions"
 	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
 	"github.com/goods/httpbuf"
+	"github.com/satori/go.uuid"
+	"github.com/OneOfOne/xxhash/native"
 
 
 	"encoding/json"
 	"fmt"
 	"strings"
 	"log"
+	"strconv"
 )
 
 const (
@@ -57,27 +57,9 @@ type User struct {
 	Email string      `json:"email"`
 	Token string      `json:"token"`
 	Pass  string      `json:"pass"`
+	Keys  []string    `json:"keys"`
 }
 
-//// RefreshToken refreshes Ttl and Token for the User.
-//func (u *User) RefreshToken() error {
-//	token := make([]byte, TokenLength)
-//	if _, err := io.ReadFull(rand.Reader, token); err != nil {
-//		return err
-//	}
-//	u.Token = base64.URLEncoding.EncodeToString(token)
-//	u.Ttl = time.Now().UTC().Add(TtlDuration)
-//	return nil
-//}
-//
-//// IsValidToken returns a bool indicating that the User's current token hasn't
-//// expired and that the provided token is valid.
-//func (u *User) IsValidToken(token string) bool {
-//	if u.Ttl.Before(time.Now().UTC()) {
-//		return false
-//	}
-//	return subtle.ConstantTimeCompare([]byte(u.Token), []byte(token)) == 1
-//}
 func (u *User) IsLogin() bool {
 	return u.Id != ""
 }
@@ -85,15 +67,16 @@ func (u *User) IsLogin() bool {
 type TemplateMap map[string]*template.Template
 var Templates TemplateMap
 
-func webInit(){
-	parseFiles := func(name string)(*template.Template){
+func webInit() {
+	parseFiles := func(name string) (*template.Template) {
 		base := "templates/"
 		partials := "templates/partials/"
 		mainTpl := base + name + ".html"
-		return template.Must(template.ParseFiles(mainTpl, partials+"header.html",  partials + "footer.html"))
+		return template.Must(template.ParseFiles(mainTpl, partials+"header.html", partials + "footer.html"))
 	}
 	Templates = make(TemplateMap)
 	Templates["login"] = parseFiles("login")
+	Templates["register"] = parseFiles("register")
 	Templates["panel-index"] = parseFiles("panel-index")
 }
 
@@ -103,9 +86,11 @@ func WebRouter() http.Handler {
 
 	r.Handle("/webapp", WebAction(WebIndex)).Methods("GET")
 	r.Handle("/webapp/login", WebAction(WebLogin)).Methods("POST")
+	r.Handle("/webapp/register", WebAction(WebRegisterGet)).Methods("GET")
 	r.Handle("/webapp/register", WebAction(WebRegister)).Methods("POST")
 	r.Handle("/webapp/logout", WebAction(WebLogout))
 	r.Handle("/webapp/panel", WebAction(WebPanelIndex)).Methods("GET")
+	r.Handle("/webapp/panel/keys", WebAction(WebPanelKeysPost)).Methods("POST")
 
 	app := negroni.New()
 	app.Use(middleware.NewSession(cookieStore))
@@ -133,7 +118,7 @@ func WebRouter() http.Handler {
 			http.Redirect(w, r, "/webapp", http.StatusFound)
 			return
 		}
-		if r.URL.Path == "/webapp" && context.Get(r, "user").(*User).IsLogin(){
+		if r.URL.Path == "/webapp" && context.Get(r, "user").(*User).IsLogin() {
 			http.Redirect(w, r, "/webapp/panel", http.StatusFound)
 			return
 		}
@@ -145,7 +130,7 @@ func WebRouter() http.Handler {
 
 func WebIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 
-	Templates["login"].Execute(w, map[string]string{"Title":"Some title", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+	Templates["login"].Execute(w, map[string]string{"Title":"Login", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
 
 	return
 }
@@ -192,6 +177,13 @@ func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err e
 	return
 }
 
+func WebRegisterGet(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+
+	Templates["register"].Execute(w, map[string]string{"Title":"Register", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+
+	return
+}
+
 func WebLogout(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 	delete(ctx.Session.Values, "user")
 
@@ -202,8 +194,41 @@ func WebLogout(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err err
 
 func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 
-	Templates["panel-index"].Execute(w, map[string]string{"Title":"Panel", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+	keys, _ := driver.Client.HMGet("keys", ctx.User.Keys...).Result()
+	keyMap := make(map[string]string, len(ctx.User.Keys))
+	for i, key := range ctx.User.Keys {
+		keyMap[key] = keys[i].(string)
+	}
 
+	Templates["panel-index"].Execute(w, map[string]interface{}{"Title":"Panel", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User), "keys":keyMap})
+
+	return
+}
+
+func WebPanelKeysPost(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+	uid := uuid.NewV4().String()
+	uHash := xxhash.Checksum64([]byte(ctx.User.Id))
+	var keyBytes []byte
+	keyBytes = strconv.AppendUint(keyBytes, uHash, 10)
+	keyBytes = append(keyBytes, '.')
+	keyBytes = append(keyBytes, []byte(uid)[:8]...)
+
+	var secretBytes []byte
+	sHash := xxhash.Checksum64([]byte(uid))
+	secretBytes = append(secretBytes, []byte(uid)[9:13]...)
+	secretBytes = append(secretBytes, '.')
+	secretBytes = strconv.AppendUint(secretBytes, sHash, 10)
+	secretBytes = append(secretBytes, '.')
+	secretBytes = append(secretBytes, []byte(uid)[24:]...)
+
+	key := string(keyBytes)
+	secret := string(secretBytes)
+	ctx.User.Keys = append(ctx.User.Keys, key)
+	bytes, _ := json.Marshal(ctx.User)
+	driver.Client.HSet("user", ctx.User.Id, string(bytes))
+	driver.Client.HSet("keys", key, secret)
+
+	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
 	return
 }
 

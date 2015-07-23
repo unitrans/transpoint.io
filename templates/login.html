@@ -1,7 +1,7 @@
 {{template "header"}}
 
 
-<h1>Hi there</h1>
+<h1>Hi there, login here</h1>
 
 <p>
     {{.Session}}
@@ -10,18 +10,14 @@
     {{.user}}
 </p>
 <h3>Login</h3>
+<p>
+    <a href="/webapp/register">Register</a>
+</p>
 <form method="post" action="/webapp/login">
     <input type="text" name="username" placeholder="Login"/>
     <input type="text" name="pass" placeholder="Pass"/>
     <input type="hidden" name="csrf_token" value="{{ .token }}">
     <input type="submit" value="Login">
-</form>
-<h3>Register</h3>
-<form method="post" action="/webapp/register">
-    <input type="text" name="username"/>
-    <input type="text" name="pass"/>
-    <input type="hidden" name="csrf_token" value="{{ .token }}">
-    <input type="submit" value="Register">
 </form>
 
 {{template "footer"}}

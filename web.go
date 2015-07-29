@@ -18,7 +18,6 @@ import (
 
 
 	"encoding/json"
-	"fmt"
 	"strings"
 	"log"
 	"strconv"
@@ -130,7 +129,7 @@ func WebRouter() http.Handler {
 
 func WebIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 
-	Templates["login"].Execute(w, map[string]string{"Title":"Login", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+	Templates["login"].Execute(w, map[string]string{"Title":"Login", "token":ctx.CSRF})
 
 	return
 }
@@ -180,7 +179,7 @@ func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err e
 
 func WebRegisterGet(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 
-	Templates["register"].Execute(w, map[string]string{"Title":"Register", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User)})
+	Templates["register"].Execute(w, map[string]string{"Title":"Register", "token":ctx.CSRF})
 
 	return
 }
@@ -201,7 +200,7 @@ func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err
 		keyMap[key] = keys[i].(string)
 	}
 
-	Templates["panel-index"].Execute(w, map[string]interface{}{"Title":"Panel", "Session": fmt.Sprintf("%+v", ctx.Session.Values), "token":ctx.CSRF, "user":fmt.Sprintf("%+v", ctx.User), "keys":keyMap})
+	Templates["panel-index"].Execute(w, map[string]interface{}{"Title":"Panel", "token":ctx.CSRF, "keys":keyMap, "user":ctx.User})
 
 	return
 }

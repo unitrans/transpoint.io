@@ -1,25 +1,36 @@
-{{template "header"}}
-
-<h1>Logged in , {{ .user.Id }}</h1>
-
-<p>
-    <a href="/webapp/logout">Logout</a>
-</p>
+{{template "header" .}}
 
 
-<h3>
-    Generate a key pair
-</h3>
+<div class="page-header">
+    <h1>Manage your access keys here </h1>
+</div>
+
 <form method="post" action="/webapp/panel/keys">
     <input type="hidden" name="csrf_token" value="{{ .token }}">
-    <input type="submit" value="Generate">
+    <input type="submit" class="btn btn-material-teal" value="Generate new key pair">
 </form>
+
 <h3>
-    List of keys
+    Your keys
 </h3>
+
+
 {{range $key, $element := .keys}}
-<div><p>key - {{$key}}</p><p>secret - {{$element}}</p></div>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{$key}}</h3>
+    </div>
+    <div class="panel-body">
+        <pre>X-Auth-Key: {{$key}}</pre>
+        <pre>X-Auth-Secret: {{$element}}</pre>
+        <a class="btn btn-warning" href="javascript:void(0)">
+            <span class="glyphicon glyphicon-trash"
+                  aria-hidden="true"></span> Delete key</a>
+    </div>
+</div>
 {{else}}
 <p>No keys</p>
 {{end}}
+
 {{template "footer"}}

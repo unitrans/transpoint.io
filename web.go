@@ -145,7 +145,11 @@ func WebLogin(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err erro
 	if res != "" && err == nil {
 		user := &User{}
 		err = json.Unmarshal([]byte(res), user)
-		if nil == err && user.Pass == pass {
+
+		pHash := xxhash.Checksum64([]byte(pass))
+		var passBytes []byte
+		passBytes = strconv.AppendUint(passBytes, pHash, 10)
+		if nil == err && user.Pass == string(passBytes) {
 			session.Values["user"] = username
 		}
 	}
@@ -164,7 +168,10 @@ func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err e
 	res, err := driver.Client.HGet("user", username).Result()
 	log.Println(res, err, "reg")
 	if res == "" {
-		user := &User{Id:username, Pass:pass}
+		pHash := xxhash.Checksum64([]byte(pass))
+		var passBytes []byte
+		passBytes = strconv.AppendUint(passBytes, pHash, 10)
+		user := &User{Id:username, Pass:string(passBytes)}
 		bytes, _ := json.Marshal(user)
 		driver.Client.HSet("user", username, string(bytes))
 		res, err = driver.Client.HGet("user", username).Result()

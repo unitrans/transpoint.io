@@ -1,17 +1,24 @@
 {{template "header" .}}
 
-<h1>Hi there, login here</h1>
+<h1>Login to your account</h1>
+<br><br>
 
-
-<h3>Login</h3>
-<p>
-    <a href="/webapp/register">Register</a>
-</p>
 <form method="post" action="/webapp/login">
-    <input type="text" name="username" placeholder="Login"/>
-    <input type="text" name="pass" placeholder="Pass"/>
+    <div class="form-group">
+        <label for="InputLogin">Login</label>
+        <input type="email" class="form-control" id="InputLogin" placeholder="Login" name="username">
+    </div>
+    <div class="form-group">
+        <label for="InputLogin">Password</label>
+        <input type="password" class="form-control" id="InputPass" placeholder="Password" name="pass">
+    </div>
     <input type="hidden" name="csrf_token" value="{{ .token }}">
-    <input type="submit" value="Login">
+    <button type="submit" class="btn btn-material-teal">Login</button>
 </form>
+
+
+<p>
+    No account? <a href="/webapp/register">Register here</a>
+</p>
 
 {{template "footer"}}

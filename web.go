@@ -69,7 +69,7 @@ var Templates TemplateMap
 func webInit() {
 	parseFiles := func(name string) (*template.Template) {
 		base := "templates/"
-		partials := "templates/partials/"
+		partials := base + "partials/"
 		mainTpl := base + name + ".html"
 		return template.Must(template.ParseFiles(mainTpl, partials+"header.html", partials + "footer.html"))
 	}

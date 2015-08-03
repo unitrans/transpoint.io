@@ -2,33 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="description" content="Transpoint - aggregate your translations in a one place">
+    <meta name="author" content="Yury Kozyrev">
     <title>{{ .Title }} - Transpoint.io</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/material-fullpalette.css">
+    <style>
+        .navbar-brand {
+            padding: 36px 15px;
+        }
+        @media (max-width: 1199px) {
+            .navbar .navbar-brand {
+                padding: 32px 15px;
+            }
+        }
+        @media (max-width: 768px) {
+            .navbar .navbar-brand {
+                padding: 10px 15px;
+            }
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar navbar-default navbar-static-top ">
     <div class="container">
         <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-main-collapse" aria-expanded="false">
                 <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <!--<a class="navbar-brand" href="#">Transpoint.io</a>-->
+            <a class="navbar-brand" href="#">Transpoint.io</a>
         </div>
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-            <ul class="nav navbar-nav ">
-                <li>
-                    <a class="navbar-text lead btn-link" href="/webapp">Transpoint.io</a>
-                </li>
+
+        <div class="collapse navbar-collapse navbar-main-collapse">
+
+            <ul class="nav navbar-nav navbar-right">
                 <li>
                     <a class="navbar-text lead btn-link" target="_blank" href="http://docs.transpoint.apiary.io/#">Docs</a>
                 </li>
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
                 {{if .user.Id}}
                 <li><a class="navbar-text btn-link" href="/webapp/panel"> {{ .user.Id }}</a></li>
                 <li><a class="navbar-text btn-link" href="/webapp/logout">Log Out</a></li>

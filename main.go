@@ -61,6 +61,7 @@ func run() error {
 	http.HandleFunc("/ping", ApiPing())
 	http.Handle("/webapp", context.ClearHandler(WebRouter()))
 	http.Handle("/webapp/", context.ClearHandler(WebRouter()))
+	http.HandleFunc("/", WebIndexPage)
 
 	initProfiler()
 

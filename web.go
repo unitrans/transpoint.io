@@ -74,6 +74,7 @@ func webInit() {
 		return template.Must(template.ParseFiles(mainTpl, partials+"header.html", partials + "footer.html"))
 	}
 	Templates = make(TemplateMap)
+	Templates["index"] = parseFiles("index")
 	Templates["login"] = parseFiles("login")
 	Templates["register"] = parseFiles("register")
 	Templates["panel-index"] = parseFiles("panel-index")
@@ -132,6 +133,12 @@ func WebIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err erro
 	Templates["login"].Execute(w, map[string]string{"Title":"Login", "token":ctx.CSRF})
 
 	return
+}
+
+func WebIndexPage(w http.ResponseWriter, r *http.Request) {
+
+	Templates["index"].Execute(w, nil)
+
 }
 
 func WebLogin(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {

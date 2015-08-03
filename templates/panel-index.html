@@ -7,7 +7,10 @@
 
 <form method="post" action="/webapp/panel/keys">
     <input type="hidden" name="csrf_token" value="{{ .token }}">
-    <input type="submit" class="btn btn-material-teal" value="Generate new key pair">
+    <button type="submit" class="btn btn-material-teal">
+        <span class="glyphicon glyphicon-plus"
+              aria-hidden="true"></span> Generate new key pair
+    </button>
 </form>
 
 <h3>
@@ -24,9 +27,13 @@
     <div class="panel-body">
         <pre>X-Auth-Key: {{$key}}</pre>
         <pre>X-Auth-Secret: {{$element}}</pre>
-        <a class="btn btn-warning" href="javascript:void(0)">
+        <form action="/webapp/panel/keys/delete/{{$key}}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ $.token }}">
+            <button type="submit" class="btn btn-warning" >
             <span class="glyphicon glyphicon-trash"
-                  aria-hidden="true"></span> Delete key</a>
+                  aria-hidden="true"></span> Delete key</button>
+        </form>
+
     </div>
 </div>
 {{else}}

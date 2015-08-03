@@ -91,6 +91,7 @@ func WebRouter() http.Handler {
 	r.Handle("/webapp/logout", WebAction(WebLogout))
 	r.Handle("/webapp/panel", WebAction(WebPanelIndex)).Methods("GET")
 	r.Handle("/webapp/panel/keys", WebAction(WebPanelKeysPost)).Methods("POST")
+	r.Handle("/webapp/panel/keys/delete/{id}", WebAction(WebPanelKeysDelete)).Methods("POST")
 
 	app := negroni.New()
 	app.Use(middleware.NewSession(cookieStore))
@@ -241,6 +242,23 @@ func WebPanelKeysPost(w http.ResponseWriter, r *http.Request, ctx *WebContext) (
 	bytes, _ := json.Marshal(ctx.User)
 	driver.Client.HSet("user", ctx.User.Id, string(bytes))
 	driver.Client.HSet("keys", key, secret)
+
+	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
+	return
+}
+
+func WebPanelKeysDelete(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
+	key := mux.Vars(r)["id"]
+
+	driver.Client.HDel("keys", key)
+
+	for k, v := range ctx.User.Keys {
+		if v == key {
+			ctx.User.Keys = append(ctx.User.Keys[:k], ctx.User.Keys[k+1:]...)
+		}
+	}
+	bytes, _ := json.Marshal(ctx.User)
+	driver.Client.HSet("user", ctx.User.Id, string(bytes))
 
 	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
 	return

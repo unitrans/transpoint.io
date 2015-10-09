@@ -4,16 +4,16 @@
 <br><br>
 
 <form method="post" action="/webapp/register">
-    <div class="form-group">
+    <div class="form-group form-group-material-amber">
         <label for="InputEmail">Email</label>
         <input type="email" class="form-control" id="InputEmail" placeholder="Email" name="username">
     </div>
-    <div class="form-group">
+    <div class="form-group form-group-material-amber">
         <label for="InputPass">Password</label>
         <input type="password" class="form-control" id="InputPass" placeholder="Password" name="pass">
     </div>
     <input type="hidden" name="csrf_token" value="{{ .token }}">
-    <button type="submit" class="btn btn-material-teal">Register</button>
+    <button type="submit" class="btn btn-material-indigo">Register</button>
 </form>
 
 <p>

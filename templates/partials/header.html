@@ -7,58 +7,41 @@
     <meta name="author" content="Yury Kozyrev">
     <title>{{ .Title }} - Transpoint.io</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/material-fullpalette.css">
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/material-fullpalette.min.css">-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-material-design/0.3.0/css/ripples.min.css">
     <style>
-        .navbar-brand {
-            padding: 36px 15px;
-        }
-        @media (max-width: 1199px) {
-            .navbar .navbar-brand {
-                padding: 32px 15px;
-            }
-        }
-        @media (max-width: 768px) {
-            .navbar .navbar-brand {
-                padding: 10px 15px;
-            }
+        a, a:hover, a:focus {
+            color: #3f51b5; /*indigo*/
         }
     </style>
 </head>
 <body>
-<nav class="navbar navbar-default navbar-static-top ">
-    <div class="container">
-        <div class="navbar-header">
-            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-main-collapse" aria-expanded="false">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-            </button>
-            <a class="navbar-brand" href="/">Transpoint.io</a>
-        </div>
-
-        <div class="collapse navbar-collapse navbar-main-collapse">
-
-            <ul class="nav navbar-nav navbar-right">
-                <li>
-                    <a class="navbar-text lead btn-link" target="_blank" href="http://docs.transpoint.apiary.io/#">Docs</a>
-                </li>
-                {{if .user.Id}}
-                <li><a class="navbar-text btn-link" href="/webapp/panel"> {{ .user.Id }}</a></li>
-                <li><a class="navbar-text btn-link" href="/webapp/logout">Log Out</a></li>
-                {{ else }}
-                <li><a class="navbar-text btn-link" href="/webapp">Login</a></li>
-                <li><a class="navbar-text btn-link" href="/webapp/register">Register</a></li>
-                {{end}}
-
-            </ul>
-
-        </div><!-- /.navbar-collapse -->
-
-
-
+<div class="navbar navbar-material-amber">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-inverse-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/">Transpoint.io</a>
     </div>
-</nav>
+    <div class="navbar-collapse collapse navbar-inverse-collapse">
+        <ul class="nav navbar-nav">
+            <li><a href="http://docs.transpoint.apiary.io/#">Documentation</a></li>
+        </ul>
+
+        <ul class="nav navbar-nav navbar-right">
+            {{if .user.Id}}
+            <li><a class="" href="/webapp/panel"> {{ .user.Id }}</a></li>
+            <li><a class="" href="/webapp/logout">Log Out</a></li>
+            {{ else }}
+            <li><a class="" href="/webapp">Login</a></li>
+            <li><a class="" href="/webapp/register">Register</a></li>
+            {{end}}
+        </ul>
+    </div>
+</div>
 <!-- .Header -->
 <div class="container">
 {{end}}

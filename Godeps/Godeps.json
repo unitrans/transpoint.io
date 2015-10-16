@@ -1,10 +1,13 @@
 {
 	"ImportPath": "github.com/urakozz/transpoint.io",
 	"GoVersion": "go1.5.1",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/OneOfOne/xxhash/native",
-			"Rev": "263987eca75324e0ef9f96cf8fd62d23e791f863"
+			"Rev": "c1973d4599b099526c59ef7229167af1f353d3c8"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/negroni",
@@ -25,11 +28,11 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
-			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "47e8f450ef38c857cdd922ec08862ca9d65a1c6d"
+			"Rev": "ad4d7a5882b961e07e2626045eb995c022ac6664"
 		},
 		{
 			"ImportPath": "github.com/gorilla/securecookie",
@@ -41,8 +44,8 @@
 		},
 		{
 			"ImportPath": "github.com/joho/godotenv",
-			"Comment": "v1-8-g443e926",
-			"Rev": "443e926da0d793d3b3f32118b1e4ba52ada26503"
+			"Comment": "v1-10-g4ed1339",
+			"Rev": "4ed13390c0acd2ff4e371e64d8b97c8954138243"
 		},
 		{
 			"ImportPath": "github.com/justinas/nosurf",
@@ -67,8 +70,8 @@
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",
-			"Comment": "v3.1.5",
-			"Rev": "2cfe5df7d2593e20161594e4c02ebb305c9ccd8e"
+			"Comment": "v3.2.12",
+			"Rev": "0880b0b20c4d37f3ef05a561dbd66d138c795d6b"
 		},
 		{
 			"ImportPath": "gopkg.in/unrolled/render.v1",

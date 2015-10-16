@@ -17,7 +17,7 @@ import (
 	"github.com/rs/cors"
 
 	"github.com/urakozz/transpoint.io/storage"
-	_ "github.com/urakozz/transpoint.io/middleware"
+	"github.com/urakozz/transpoint.io/middleware"
 )
 
 

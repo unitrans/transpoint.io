@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/urakozz/transpoint.io",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.1",
 	"Deps": [
 		{
 			"ImportPath": "github.com/OneOfOne/xxhash/native",
@@ -54,17 +54,16 @@
 			"Rev": "236f3c18307ad38e59fc3f85e7bde1bef6233782"
 		},
 		{
+			"ImportPath": "github.com/rs/cors",
+			"Rev": "eb527c8097e0f19a3ff7b253a3fe70545070f420"
+		},
+		{
 			"ImportPath": "github.com/satori/go.uuid",
 			"Rev": "afe1e2ddf0f05b7c29d388a3f8e76cb15c2231ca"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
 			"Rev": "bda20d5067a03094fc6762f7ead53027afac5f28"
-		},
-		{
-			"ImportPath": "gopkg.in/bufio.v1",
-			"Comment": "v1",
-			"Rev": "567b2bfa514e796916c4747494d6ff5132a1dfce"
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",

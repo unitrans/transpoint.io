@@ -36,19 +36,19 @@ func ApiRouter() http.Handler {
 	app := negroni.New()
 //	app.Use(negroni.NewRecovery())
 	app.Use(negroni.NewLogger())
-//	app.Use(middleware.NewAuthMiddleware(
-//		"X-Auth-Key",
-//		"X-Auth-Secret",
-//		middleware.AuthConfig{
-//			Context: func(r *http.Request, authenticatedKey string) {
-//				context.Set(r, 0, authenticatedKey)
-//			},
-//			Client: func(key, secret string) bool {
-//				sec := driver.Client.HGet("keys", key).Val()
-//				return sec == secret
-//			},
-//		},
-//	))
+	app.Use(middleware.NewAuthMiddleware(
+		"X-Auth-Key",
+		"X-Auth-Secret",
+		middleware.AuthConfig{
+			Context: func(r *http.Request, authenticatedKey string) {
+				context.Set(r, 0, authenticatedKey)
+			},
+			Client: func(key, secret string) bool {
+				sec := driver.Client.HGet("keys", key).Val()
+				return sec == secret
+			},
+		},
+	))
 	c := cors.New(cors.Options{})
 	app.Use(c)
 	app.UseHandler(r)

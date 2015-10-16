@@ -1,21 +1,6 @@
-// Copyright ${YEAR} Home24 AG. All rights reserved.
+// Copyright 2015 Yury Kozyrev. All rights reserved.
 // Proprietary license.
 package middleware
-
-/*
-|--------------------------------------------------------------------------
-| WARNING
-|--------------------------------------------------------------------------
-| Never Set HTTPSProtectionOff=true In Production.
-| The Key and Password will be exposed and highly unsecure otherwise!
-| The database server should also use HTTPS Connection and be hidden away
-|
-*/
-
-/*
-Thanks to Ido Ben-Natan ("IdoBn") for postgres fix.
-Thanks to Jeremy Saenz & Brendon Murphy for timing-attack protection
-*/
 
 import (
 	"log"

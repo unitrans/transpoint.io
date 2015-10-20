@@ -1,9 +1,6 @@
 {
 	"ImportPath": "github.com/urakozz/transpoint.io",
 	"GoVersion": "go1.5.1",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/OneOfOne/xxhash/native",
@@ -63,6 +60,10 @@
 		{
 			"ImportPath": "github.com/satori/go.uuid",
 			"Rev": "afe1e2ddf0f05b7c29d388a3f8e76cb15c2231ca"
+		},
+		{
+			"ImportPath": "github.com/urakozz/go-emoji",
+			"Rev": "103156b407a69b9069485ff5086a38f46862680a"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",

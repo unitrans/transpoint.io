@@ -9,7 +9,6 @@ import (
 	"log"
 	"encoding/json"
 	"strings"
-//	"sync"
 	"sync"
 )
 
@@ -38,13 +37,15 @@ func (t *YandexTranslator) Translate(text string, langs []string) (*TranslationC
 	for lang, _ := range set{
 		languages = append(languages, lang)
 	}
+	processor := NewEmojiProcessor()
+	text = processor.Process(text)
 
 	responseChan := make(chan *YandexResponse, len(languages))
 
 	go t.doRequests(text, languages, responseChan)
 	for resp := range responseChan {
 		log.Println(resp)
-		container.Translations[resp.GetLang()] = resp.GetText()
+		container.Translations[resp.GetLang()] = processor.Restore(resp.GetText())
 		container.Source = resp.GetSource()
 	}
 	return container

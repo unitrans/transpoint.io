@@ -64,8 +64,7 @@ func (u *User) IsLogin() bool {
 	return u.Id != ""
 }
 
-type TemplateMap map[string]*template.Template
-var Templates TemplateMap
+var Templates = make(map[string]*template.Template)
 
 func webInit() {
 	parseFiles := func(name string) (*template.Template) {
@@ -74,7 +73,7 @@ func webInit() {
 		mainTpl := base + name + ".html"
 		return template.Must(template.ParseFiles(mainTpl, partials+"header.html", partials + "footer.html"))
 	}
-	Templates = make(TemplateMap)
+
 	Templates["index"] = parseFiles("index")
 	Templates["login"] = parseFiles("login")
 	Templates["register"] = parseFiles("register")
@@ -85,14 +84,14 @@ func WebRouter() http.Handler {
 	webInit()
 	r := mux.NewRouter()
 
-	r.Handle("/webapp", WebAction(WebIndex)).Methods("GET")
-	r.Handle("/webapp/login", WebAction(WebLogin)).Methods("POST")
-	r.Handle("/webapp/register", WebAction(WebRegisterGet)).Methods("GET")
-	r.Handle("/webapp/register", WebAction(WebRegister)).Methods("POST")
-	r.Handle("/webapp/logout", WebAction(WebLogout))
-	r.Handle("/webapp/panel", WebAction(WebPanelIndex)).Methods("GET")
-	r.Handle("/webapp/panel/keys", WebAction(WebPanelKeysPost)).Methods("POST")
-	r.Handle("/webapp/panel/keys/delete/{id}", WebAction(WebPanelKeysDelete)).Methods("POST")
+	r.Handle("/", WebAction(WebIndex)).Methods("GET")
+	r.Handle("/login", WebAction(WebLogin)).Methods("POST")
+	r.Handle("/register", WebAction(WebRegisterGet)).Methods("GET")
+	r.Handle("/register", WebAction(WebRegister)).Methods("POST")
+	r.Handle("/logout", WebAction(WebLogout))
+	r.Handle("/panel", WebAction(WebPanelIndex)).Methods("GET")
+	r.Handle("/panel/keys", WebAction(WebPanelKeysPost)).Methods("POST")
+	r.Handle("/panel/keys/delete/{id}", WebAction(WebPanelKeysDelete)).Methods("POST")
 
 	app := negroni.New()
 	app.Use(middleware.NewSession(cookieStore))

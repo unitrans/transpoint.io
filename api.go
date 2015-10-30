@@ -25,13 +25,13 @@ const ApiVersion = "v1"
 
 func ApiRouter() http.Handler {
 	r := mux.NewRouter()
-	r.HandleFunc("/v1", wrap(Default)).Methods("GET")
-	r.HandleFunc("/v1/translations", wrap(Create)).Methods("POST")
-	r.HandleFunc("/v1/translations/{id:[a-z0-9-]+}", wrap(Save)).Methods("POST")
-	r.HandleFunc("/v1/translations/{id}", wrap(Get)).Methods("GET")
-	r.HandleFunc("/v1/translations/{id}/{lang:[a-z]{2}}", wrap(GetParticular)).Methods("GET")
-	r.HandleFunc("/v1/translations/{id}", wrap(Delete)).Methods("DELETE")
-	r.HandleFunc("/v1/translations/{id}/{lang:[a-z]{2}}", wrap(DeleteParticular)).Methods("DELETE")
+	r.HandleFunc("/", wrap(Default)).Methods("GET")
+	r.HandleFunc("/translations", wrap(Create)).Methods("POST")
+	r.HandleFunc("/translations/{id:[a-z0-9-]+}", wrap(Save)).Methods("POST")
+	r.HandleFunc("/translations/{id}", wrap(Get)).Methods("GET")
+	r.HandleFunc("/translations/{id}/{lang:[a-z]{2}}", wrap(GetParticular)).Methods("GET")
+	r.HandleFunc("/translations/{id}", wrap(Delete)).Methods("DELETE")
+	r.HandleFunc("/translations/{id}/{lang:[a-z]{2}}", wrap(DeleteParticular)).Methods("DELETE")
 
 	app := negroni.New()
 //	app.Use(negroni.NewRecovery())

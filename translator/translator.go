@@ -26,6 +26,7 @@ func initClient() (*http.Client) {
 		transport := &httpcontrol.Transport{
 			RequestTimeout: time.Minute,
 			MaxTries: 3,
+			MaxIdleConnsPerHost: 10,
 		}
 
 		client = &http.Client{

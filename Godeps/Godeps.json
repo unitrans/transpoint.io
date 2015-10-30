@@ -1,9 +1,6 @@
 {
 	"ImportPath": "github.com/urakozz/transpoint.io",
 	"GoVersion": "go1.5.1",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/OneOfOne/xxhash/native",

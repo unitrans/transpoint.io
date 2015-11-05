@@ -7,6 +7,11 @@
 			"Rev": "c1973d4599b099526c59ef7229167af1f353d3c8"
 		},
 		{
+			"ImportPath": "github.com/ant0ine/go-json-rest/rest",
+			"Comment": "v3.2.0-11-g2af9d00",
+			"Rev": "2af9d0034afcd83101abb1945f2a65ddbd563719"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1-70-gc7477ad",
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
@@ -14,6 +19,11 @@
 		{
 			"ImportPath": "github.com/davecheney/profile",
 			"Rev": "c29d1a1565bca9fbeed5eed0e5d52ba78469a16b"
+		},
+		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Comment": "v2.3.0-10-g9a00cd5",
+			"Rev": "9a00cd52d4fdc3c7712f517013a42183b5e459e7"
 		},
 		{
 			"ImportPath": "github.com/facebookgo/httpcontrol",
@@ -64,6 +74,10 @@
 		{
 			"ImportPath": "github.com/urakozz/go-emoji",
 			"Rev": "103156b407a69b9069485ff5086a38f46862680a"
+		},
+		{
+			"ImportPath": "github.com/urakozz/go-json-rest-middleware-jwt",
+			"Rev": "78eb42586663f87fcfdb39d7f8c02da8b9896e2e"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",

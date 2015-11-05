@@ -7,6 +7,7 @@ import (
 	"github.com/urakozz/go-json-rest-middleware-jwt"
 	"net/http"
 	"time"
+	"log"
 )
 
 func NewWebApi() http.Handler {
@@ -16,19 +17,31 @@ func NewWebApi() http.Handler {
 		Timeout:    time.Second * 30,
 		MaxRefresh: time.Hour * 24,
 		Authenticator: func(userId string, password string) bool {
-			return userId == "admin" && password == "admin"
+			log.Println(userId, password)
+//			return userId == "admin" && password == "admin"
+			return password == "123123"
 		}}
 
+	var DevStack = []rest.Middleware{
+		&rest.AccessLogApacheMiddleware{},
+		&rest.TimerMiddleware{},
+		&rest.RecorderMiddleware{},
+		&rest.PoweredByMiddleware{},
+		&rest.RecoverMiddleware{
+			EnableResponseStackTrace: true,
+		},
+		&rest.JsonIndentMiddleware{},
+	}
 	api := rest.NewApi()
-	api.Use(rest.DefaultDevStack...)
+
+	api.Use(DevStack...)
 	api.Use(&rest.CorsMiddleware{
 		RejectNonCorsRequests: false,
 		OriginValidator: func(origin string, request *rest.Request) bool {
 			return true
 		},
-		AllowedMethods: []string{"GET", "POST", "PUT"},
-		AllowedHeaders: []string{
-			"Accept", "Content-Type", "Authorization", "X-RequestId", "Origin"},
+		AllowedMethods: []string{"*"},
+		AllowedHeaders: []string{"*"},
 		AccessControlAllowCredentials: true,
 		AccessControlMaxAge:           3600,
 	})

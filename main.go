@@ -15,6 +15,7 @@ import (
 
 	"github.com/urakozz/transpoint.io/storage"
 	t "github.com/urakozz/transpoint.io/translator"
+	"github.com/urakozz/transpoint.io/src/infrastrucrute"
 )
 
 
@@ -59,6 +60,7 @@ func run() error {
 	http.Handle("/v1/", http.StripPrefix("/v1/", context.ClearHandler(ApiRouter())))
 	http.HandleFunc("/ping", ApiPing())
 	http.Handle("/webapp/", http.StripPrefix("/webapp", context.ClearHandler(WebRouter())))
+	http.Handle("/webapi/", http.StripPrefix("/webapi", infrastrucrute.NewWebApi()))
 	http.HandleFunc("/", WebIndexPage)
 
 	initProfiler()

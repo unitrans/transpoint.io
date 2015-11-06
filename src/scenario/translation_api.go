@@ -1,6 +1,6 @@
-// Copyright ${YEAR} Home24 AG. All rights reserved.
+// Copyright 2015 Yury Kozyrev. All rights reserved.
 // Proprietary license.
-package main
+package scenario
 
 import (
 	"fmt"
@@ -16,14 +16,33 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/rs/cors"
 
-	"github.com/urakozz/transpoint.io/storage"
-	"github.com/urakozz/transpoint.io/middleware"
+
+	r "gopkg.in/unrolled/render.v1"
+
+	"github.com/urakozz/transpoint.io/src/infrastrucrute/middleware"
+	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
+	t "github.com/urakozz/transpoint.io/src/infrastrucrute/translator"
 )
 
 
 const ApiVersion = "v1"
 
-func ApiRouter() http.Handler {
+var (
+	transRepository *repository.TranslationRepository
+	translator t.Translator
+	render *r.Render
+)
+
+
+type Action func(w http.ResponseWriter, r *http.Request) (interface{}, int)
+
+
+func ApiRouter(userRepository *repository.UserRepository, tRep *repository.TranslationRepository, tr t.Translator) http.Handler {
+	transRepository = tRep
+	translator = tr
+
+	render = r.New(r.Options{})
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", wrap(Default)).Methods("GET")
 	r.HandleFunc("/translations", wrap(Create)).Methods("POST")
@@ -34,7 +53,7 @@ func ApiRouter() http.Handler {
 	r.HandleFunc("/translations/{id}/{lang:[a-z]{2}}", wrap(DeleteParticular)).Methods("DELETE")
 
 	app := negroni.New()
-//	app.Use(negroni.NewRecovery())
+	//	app.Use(negroni.NewRecovery())
 	app.Use(negroni.NewLogger())
 	app.Use(middleware.NewAuthMiddleware(
 		"X-Auth-Key",
@@ -44,7 +63,7 @@ func ApiRouter() http.Handler {
 				context.Set(r, 0, authenticatedKey)
 			},
 			Client: func(key, secret string) bool {
-				sec := driver.Client.HGet("keys", key).Val()
+				sec := userRepository.GetSecretByKey(key)
 				return sec == secret
 			},
 		},
@@ -53,11 +72,11 @@ func ApiRouter() http.Handler {
 	app.Use(c)
 	app.UseHandler(r)
 
-	return app
+	return context.ClearHandler(app)
 }
 
 func ApiPing() func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request){
+	return func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("PONG"))
 	}
 }
@@ -90,7 +109,7 @@ func Create(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	json.NewDecoder(r.Body).Decode(&request)
 	bag, _ := SmartSave(request, id)
 
-	w.Header().Set("Location", "/"+ApiVersion+"/translations/"+u1)
+	w.Header().Set("Location", "/" + ApiVersion + "/translations/" + u1)
 	return bag, http.StatusCreated
 }
 
@@ -102,14 +121,14 @@ func Save(w http.ResponseWriter, r *http.Request) (bag interface{}, status int) 
 	status = http.StatusOK
 
 	if newLng > 0 {
-		w.Header().Set("Location", "/"+ApiVersion+"/translations/"+id)
+		w.Header().Set("Location", "/" + ApiVersion + "/translations/" + id)
 		status = http.StatusCreated
 	}
 	return
 }
 
-func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag, newLng int) {
-	bag, err := driver.GetAll(id)
+func SmartSave(request *RequestObject, id string) (bag repository.TranslationBag, newLng int) {
+	bag, err := transRepository.GetAll(id)
 	log.Println(bag, err)
 
 	langs := request.Lang
@@ -136,8 +155,8 @@ func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag, n
 		return
 	}
 	container := translator.Translate(request.Text, langs)
-	driver.Save(id, container.Source, request.Text, container.Translations)
-	bag, err = driver.GetAll(id)
+	transRepository.Save(id, container.Source, request.Text, container.Translations)
+	bag, err = transRepository.GetAll(id)
 	log.Println(bag, err)
 	return
 }
@@ -145,7 +164,7 @@ func SmartSave(request *RequestObject, id string) (bag storage.TranslationBag, n
 func Get(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	id := getId(r)
 	start := time.Now()
-	bag, err := driver.GetAll(id)
+	bag, err := transRepository.GetAll(id)
 	log.Printf("Completed in %v", time.Since(start))
 	if nil != err {
 		return map[string]string{"error":err.Error()}, http.StatusNotFound
@@ -159,7 +178,7 @@ func GetParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	lang := mux.Vars(r)["lang"]
 
 	start := time.Now()
-	bag, err := driver.GetLang(id, lang)
+	bag, err := transRepository.GetLang(id, lang)
 	log.Printf("Completed in %v", time.Since(start))
 
 	if nil != err {
@@ -171,7 +190,7 @@ func GetParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 
 func Delete(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	id := getId(r)
-	err := driver.Delete(id)
+	err := transRepository.Delete(id)
 	if err != nil {
 		log.Println("Delete", id, err)
 	}
@@ -181,7 +200,7 @@ func Delete(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 func DeleteParticular(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	id := getId(r)
 	lang := mux.Vars(r)["lang"]
-	err := driver.DeleteLang(id, lang)
+	err := transRepository.DeleteLang(id, lang)
 
 	if err != nil {
 		log.Println("Delete", id, err)
@@ -192,7 +211,7 @@ func DeleteParticular(w http.ResponseWriter, r *http.Request) (interface{}, int)
 func getId(r *http.Request) string {
 	id := mux.Vars(r)["id"]
 	key := context.Get(r, 0).(string)
-	return key+"%"+id
+	return key + "%" + id
 }
 
 type RequestObject struct {

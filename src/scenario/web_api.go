@@ -1,6 +1,6 @@
 // Copyright 2015 Home24 AG. All rights reserved.
 // Proprietary license.
-package infrastrucrute
+package scenario
 
 import (
 	"github.com/ant0ine/go-json-rest/rest"

@@ -1,5 +1,7 @@
-// Copyright ${YEAR} Home24 AG. All rights reserved.
+// Copyright 2015 Yury Kozyrev. All rights reserved.
 // Proprietary license.
+
+// Package middleware - infrastructure/middleware
 package middleware
 import (
 	"time"
@@ -11,14 +13,17 @@ import (
 	"log"
 )
 
+// Session struct
 type Session struct {
 	session sessions.Store
 }
 
+// NewSession creates new session
 func NewSession(session sessions.Store) *Session {
 	return &Session{session}
 }
 
+// ServeHTTP mandatory middleware part
 func (a *Session) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	session, err := a.session.Get(r, "_session")
 	if err != nil {
@@ -41,14 +46,17 @@ func (a *Session) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.H
 	//	res := rw.(ResponseWriter)
 }
 
+// CsrfMiddleware struct
 type CsrfMiddleware struct {
 	name string
 }
 
+// NewCsrfMiddleware constructor
 func NewCsrfMiddleware(name string) *CsrfMiddleware {
 	return &CsrfMiddleware{name}
 }
 
+// ServeHTTP mandatory middleware part
 func (m *CsrfMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	var token string
 	var passed bool
@@ -72,19 +80,22 @@ func (m *CsrfMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next 
 	}
 }
 
-
+// UserMiddleware struct
 type UserMiddleware struct {
 	c *UserMiddlewareConfig
 }
 
+// UserMiddlewareConfig config for UserMiddleware
 type UserMiddlewareConfig struct {
 	Authenticator func(userId string) (interface{}, error)
 }
 
+// NewUserMiddleware constructor
 func NewUserMiddleware(c *UserMiddlewareConfig) *UserMiddleware {
 	return &UserMiddleware{c}
 }
 
+// ServeHTTP mandatory middleware part
 func (m *UserMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	s := context.Get(r, "session").(*sessions.Session)
 

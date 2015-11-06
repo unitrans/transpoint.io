@@ -1,5 +1,7 @@
 // Copyright 2015 Yury Kozyrev. All rights reserved.
 // Proprietary license.
+
+// Package middleware - infrastructure/middleware
 package middleware
 
 import (
@@ -10,6 +12,7 @@ import (
 	"gopkg.in/unrolled/render.v1"
 )
 
+// AuthConfig config for the middleware
 type AuthConfig struct {
 	ErrorMessages map[int]map[string]string
 	Context       func(r *http.Request, authenticatedKey string)
@@ -18,12 +21,14 @@ type AuthConfig struct {
 
 }
 
+// RESTGate middleware
 type RESTGate struct {
 	headerKeyLabel    string
 	headerSecretLabel string
 	config            AuthConfig
 }
 
+// NewAuthMiddleware new Auth Middleware
 func NewAuthMiddleware(headerKeyLabel string, headerSecretLabel string, config AuthConfig) *RESTGate {
 	t := &RESTGate{headerKeyLabel: headerKeyLabel, headerSecretLabel: headerSecretLabel, config: config}
 
@@ -53,28 +58,28 @@ func NewAuthMiddleware(headerKeyLabel string, headerSecretLabel string, config A
 	return t
 }
 
-func (self *RESTGate) ServeHTTP(w http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
+func (rest *RESTGate) ServeHTTP(w http.ResponseWriter, req *http.Request, next http.HandlerFunc) {
 
 	//Check key in Header
-	key := req.Header.Get(self.headerKeyLabel)
-	secret := req.Header.Get(self.headerSecretLabel)
+	key := req.Header.Get(rest.headerKeyLabel)
+	secret := req.Header.Get(rest.headerSecretLabel)
 
 	if key == "" {
 		//Authentication Information not included in request
 		r := render.New(render.Options{})
-		r.JSON(w, http.StatusUnauthorized, self.config.ErrorMessages[1]) //"No Key Or Secret"
+		r.JSON(w, http.StatusUnauthorized, rest.config.ErrorMessages[1]) //"No Key Or Secret"
 		return
 	}
 
-	authenticationPassed := self.config.Client(key, secret)
+	authenticationPassed := rest.config.Client(key, secret)
 	if authenticationPassed == false {
 		r := render.New(render.Options{})
-		r.JSON(w, http.StatusUnauthorized, self.config.ErrorMessages[2]) //"Unauthorized Access"
+		r.JSON(w, http.StatusUnauthorized, rest.config.ErrorMessages[2]) //"Unauthorized Access"
 		return
 	}
 
-	if self.config.Context != nil {
-		self.config.Context(req, key)
+	if rest.config.Context != nil {
+		rest.config.Context(req, key)
 	}
 	next(w, req)
 

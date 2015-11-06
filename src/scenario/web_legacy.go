@@ -48,6 +48,7 @@ func (a WebAction) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		User: context.Get(r, "user").(*domain.User),
 		CSRF: context.Get(r, "csrf").(string),
 	}
+
 	err := a(buf, r, ctx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -173,7 +174,7 @@ func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err e
 		pHash := xxhash.Checksum64([]byte(pass))
 		var passBytes []byte
 		passBytes = strconv.AppendUint(passBytes, pHash, 10)
-		user := &domain.User{ID:username, Pass:string(passBytes)}
+		user := &domain.User{Id:username, Pass:string(passBytes)}
 		bytes, _ := json.Marshal(user)
 		userRepository.SaveUserById(username, string(bytes))
 		res, err = userRepository.GetUserById(username)
@@ -208,6 +209,7 @@ func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err
 	for i, key := range ctx.User.Keys {
 		keyMap[key] = keys[i].(string)
 	}
+	log.Printf("%+v",ctx.User)
 
 	Templates["panel-index"].Execute(w, map[string]interface{}{"Title":"Panel", "token":ctx.CSRF, "keys":keyMap, "user":ctx.User})
 
@@ -216,7 +218,7 @@ func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err
 
 func WebPanelKeysPost(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
 	uid := uuid.NewV4().String()
-	uHash := xxhash.Checksum64([]byte(ctx.User.ID))
+	uHash := xxhash.Checksum64([]byte(ctx.User.Id))
 	var keyBytes []byte
 	keyBytes = strconv.AppendUint(keyBytes, uHash, 10)
 	keyBytes = append(keyBytes, '.')
@@ -234,7 +236,7 @@ func WebPanelKeysPost(w http.ResponseWriter, r *http.Request, ctx *WebContext) (
 	secret := string(secretBytes)
 	ctx.User.Keys = append(ctx.User.Keys, key)
 	bytes, _ := json.Marshal(ctx.User)
-	userRepository.SaveUserById(ctx.User.ID, string(bytes))
+	userRepository.SaveUserById(ctx.User.Id, string(bytes))
 	userRepository.SaveSecretByKey(key, secret)
 
 	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
@@ -252,7 +254,7 @@ func WebPanelKeysDelete(w http.ResponseWriter, r *http.Request, ctx *WebContext)
 		}
 	}
 	bytes, _ := json.Marshal(ctx.User)
-	userRepository.SaveUserById(ctx.User.ID, string(bytes))
+	userRepository.SaveUserById(ctx.User.Id, string(bytes))
 
 	http.Redirect(w, r, "/webapp/panel", http.StatusFound)
 	return

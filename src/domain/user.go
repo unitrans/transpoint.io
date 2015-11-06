@@ -11,7 +11,7 @@ func NewUser() *User {
 
 // User user struct
 type User struct {
-	ID string         `json:"id"`
+	Id string         `json:"id"`
 	Email string      `json:"email"`
 	Token string      `json:"token"`
 	Pass  string      `json:"pass"`
@@ -20,5 +20,5 @@ type User struct {
 
 // IsLogin is user logged in
 func (u *User) IsLogin() bool {
-	return u.ID != ""
+	return u.Id != ""
 }

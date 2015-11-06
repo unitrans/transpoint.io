@@ -170,7 +170,7 @@ func WebRegister(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err e
 
 	res, err := userRepository.GetUserById(username)
 	log.Println(res, err, "reg")
-	if res == "" {
+	if res == "" && username != "" && pass != "" {
 		pHash := xxhash.Checksum64([]byte(pass))
 		var passBytes []byte
 		passBytes = strconv.AppendUint(passBytes, pHash, 10)

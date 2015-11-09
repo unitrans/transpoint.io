@@ -3,6 +3,10 @@
 
 // Package domain business entities
 package domain
+import (
+	"github.com/OneOfOne/xxhash"
+	"strconv"
+)
 
 // NewUser creates new user
 func NewUser() *User {
@@ -21,4 +25,11 @@ type User struct {
 // IsLogin is user logged in
 func (u *User) IsLogin() bool {
 	return u.Id != ""
+}
+
+func HashPassword(password string) string {
+	pHash := xxhash.Checksum64([]byte(password))
+	var passBytes []byte
+	passBytes = strconv.AppendUint(passBytes, pHash, 10)
+	return string(passBytes)
 }

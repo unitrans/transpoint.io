@@ -51,8 +51,8 @@ func NewWebApi() http.Handler {
 		OriginValidator: func(origin string, request *rest.Request) bool {
 			return true
 		},
-		AllowedMethods: []string{"*"},
-		AllowedHeaders: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT"},
+		AllowedHeaders: []string{"Authorization", "Accept", "Content-Type", "X-Custom-Header", "Origin"},
 		AccessControlAllowCredentials: true,
 		AccessControlMaxAge:           3600,
 	})

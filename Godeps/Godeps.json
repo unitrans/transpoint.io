@@ -3,7 +3,7 @@
 	"GoVersion": "go1.5.1",
 	"Deps": [
 		{
-			"ImportPath": "github.com/OneOfOne/xxhash/native",
+			"ImportPath": "github.com/OneOfOne/xxhash",
 			"Rev": "c1973d4599b099526c59ef7229167af1f353d3c8"
 		},
 		{

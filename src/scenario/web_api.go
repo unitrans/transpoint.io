@@ -12,6 +12,25 @@ import (
 	"log"
 )
 
+type UserMiddleware struct {
+
+}
+
+func (mw *UserMiddleware) MiddlewareFunc(h rest.HandlerFunc) rest.HandlerFunc {
+	return func(w rest.ResponseWriter, r *rest.Request) {
+
+		userId := r.Env["REMOTE_USER"].(string)
+		res, _ := userRepository.GetUserById(userId)
+		user := domain.NewUser()
+		json.Unmarshal([]byte(res), user)
+		r.Env["USER"] = user
+
+		// call the handler
+		h(w, r)
+
+	}
+}
+
 func NewWebApi() http.Handler {
 	Authenticator := func(userId, password string) bool {
 
@@ -28,7 +47,7 @@ func NewWebApi() http.Handler {
 	var jwt_middleware = &jwt.JWTMiddleware{
 		Key:        []byte("testKey"),
 		Realm:      "Unitrans",
-		Timeout:    time.Second * 30,
+		Timeout:    time.Hour * 30,
 		MaxRefresh: time.Hour * 24,
 		Authenticator: Authenticator,
 	}
@@ -37,7 +56,9 @@ func NewWebApi() http.Handler {
 		&rest.AccessLogApacheMiddleware{},
 		&rest.TimerMiddleware{},
 		&rest.RecorderMiddleware{},
-		&rest.PoweredByMiddleware{},
+		&rest.PoweredByMiddleware{
+			XPoweredBy:"unitrans",
+		},
 		&rest.RecoverMiddleware{
 			EnableResponseStackTrace: true,
 		},
@@ -51,22 +72,33 @@ func NewWebApi() http.Handler {
 		OriginValidator: func(origin string, request *rest.Request) bool {
 			return true
 		},
-		AllowedMethods: []string{"GET", "POST", "PUT"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Accept", "Content-Type", "X-Custom-Header", "Origin"},
 		AccessControlAllowCredentials: true,
 		AccessControlMaxAge:           3600,
 	})
 	api.Use(&rest.IfMiddleware{
 		Condition: func(request *rest.Request) bool {
-			return request.URL.Path != "/login" && request.URL.Path != "/refresh"
+			return request.URL.Path != "/login" && request.URL.Path != "/refresh" && request.URL.Path != "/register"
 		},
 		IfTrue: jwt_middleware,
+	})
+	api.Use(&rest.IfMiddleware{
+		Condition: func(r *rest.Request) bool {
+			_, ok := r.Env["REMOTE_USER"]
+			return ok
+		},
+		IfTrue: &UserMiddleware{},
 	})
 	api_router, _ := rest.MakeRouter(
 		rest.Post("/login", jwt_middleware.LoginHandler),
 		rest.Get("/test", handle_auth),
 		rest.Get("/refresh", jwt_middleware.RefreshHandler),
-		rest.Get("/register", Register),
+		rest.Post("/register", Register),
+
+		rest.Get("/keys", KeysList),
+		rest.Post("/keys", KeyCreate),
+		rest.Delete("/keys/*key", KeyDelete),
 	)
 	api.SetApp(api_router)
 	return api.MakeHandler()
@@ -85,9 +117,15 @@ func Register(w rest.ResponseWriter, r *rest.Request) {
 	}
 	r.DecodeJsonPayload(&form)
 
-	res, err := userRepository.GetUserById(form.Id)
-	if err != nil || res == "" || form.Pass == "" {
+	if form.Pass == "" {
 		rest.Error(w, "Invalid input", 400)
+		return
+	}
+
+	res, err := userRepository.GetUserById(form.Id)
+	if res != "" {
+		rest.Error(w, "[username]exists", 400)
+		return
 	}
 
 	user := &domain.User{Id:form.Id, Pass:domain.HashPassword(form.Pass)}
@@ -97,5 +135,60 @@ func Register(w rest.ResponseWriter, r *rest.Request) {
 	log.Println(res, err)
 	w.WriteJson(map[string]string{"Status":"OK"})
 }
+
+func KeyCreate(w rest.ResponseWriter, r *rest.Request){
+
+	user := r.Env["USER"].(*domain.User)
+
+	key, secret := domain.GenerateKeyPair(user)
+	user.AddKey(key)
+
+
+	go func(user *domain.User, key, secret string){
+		bytes, _ := json.Marshal(user)
+		userRepository.SaveUserById(user.Id, string(bytes))
+		userRepository.SaveSecretByKey(key, secret)
+	}(user, key, secret)
+
+	userClone := user.Clone()
+	userClone.Pass = ""
+	w.WriteHeader(http.StatusCreated)
+	w.WriteJson(userClone)
+}
+
+func KeysList(w rest.ResponseWriter, r *rest.Request){
+
+	user := r.Env["USER"].(*domain.User)
+
+	user.Pass = ""
+	w.WriteJson(user)
+}
+
+func KeyDelete(w rest.ResponseWriter, r *rest.Request){
+	key := r.PathParam("key")
+	user := r.Env["USER"].(*domain.User)
+
+	for k, v := range user.Keys {
+		if v == key {
+			user.Keys = append(user.Keys[:k], user.Keys[k+1:]...)
+			break
+		}
+	}
+	if len(user.Keys) == 0 {
+		user.Keys = nil
+	}
+
+	go func(user *domain.User, key string){
+		bytes, _ := json.Marshal(user)
+		userRepository.SaveUserById(user.Id, string(bytes))
+		userRepository.DeleteSecretByKey(key)
+	}(user, key)
+
+
+	userClone := user.Clone()
+	userClone.Pass = ""
+	w.WriteJson(userClone)
+}
+
 
 

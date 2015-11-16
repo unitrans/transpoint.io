@@ -16,8 +16,6 @@ func NewUser() *User {
 // User user struct
 type User struct {
 	Id string         `json:"id"`
-	Email string      `json:"email"`
-	Token string      `json:"token"`
 	Pass  string      `json:"pass"`
 	Keys  []string    `json:"keys"`
 }
@@ -25,6 +23,16 @@ type User struct {
 // IsLogin is user logged in
 func (u *User) IsLogin() bool {
 	return u.Id != ""
+}
+
+func (u *User) AddKey(key string) {
+	u.Keys = append(u.Keys, key)
+}
+
+func (u *User) Clone() *User {
+	clone := &User{}
+	*clone = *u
+	return clone
 }
 
 func HashPassword(password string) string {

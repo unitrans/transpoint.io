@@ -12,7 +12,6 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/goods/httpbuf"
-	"github.com/satori/go.uuid"
 	"github.com/OneOfOne/xxhash/native"
 
 
@@ -217,24 +216,11 @@ func WebPanelIndex(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err
 }
 
 func WebPanelKeysPost(w http.ResponseWriter, r *http.Request, ctx *WebContext) (err error) {
-	uid := uuid.NewV4().String()
-	uHash := xxhash.Checksum64([]byte(ctx.User.Id))
-	var keyBytes []byte
-	keyBytes = strconv.AppendUint(keyBytes, uHash, 10)
-	keyBytes = append(keyBytes, '.')
-	keyBytes = append(keyBytes, []byte(uid)[:8]...)
 
-	var secretBytes []byte
-	sHash := xxhash.Checksum64([]byte(uid))
-	secretBytes = append(secretBytes, []byte(uid)[9:13]...)
-	secretBytes = append(secretBytes, '.')
-	secretBytes = strconv.AppendUint(secretBytes, sHash, 10)
-	secretBytes = append(secretBytes, '.')
-	secretBytes = append(secretBytes, []byte(uid)[24:]...)
+	key, secret := domain.GenerateKeyPair(ctx.User)
 
-	key := string(keyBytes)
-	secret := string(secretBytes)
-	ctx.User.Keys = append(ctx.User.Keys, key)
+	ctx.User.AddKey(key)
+
 	bytes, _ := json.Marshal(ctx.User)
 	userRepository.SaveUserById(ctx.User.Id, string(bytes))
 	userRepository.SaveSecretByKey(key, secret)

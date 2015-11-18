@@ -79,7 +79,7 @@ func NewWebApi() http.Handler {
 	})
 	api.Use(&rest.IfMiddleware{
 		Condition: func(request *rest.Request) bool {
-			return request.URL.Path != "/login" && request.URL.Path != "/refresh" && request.URL.Path != "/register"
+			return request.URL.Path != "/login" && request.URL.Path != "/refresh" && request.URL.Path != "/register" && request.URL.Path != "/checkExists"
 		},
 		IfTrue: jwt_middleware,
 	})
@@ -95,6 +95,7 @@ func NewWebApi() http.Handler {
 		rest.Get("/test", handle_auth),
 		rest.Get("/refresh", jwt_middleware.RefreshHandler),
 		rest.Post("/register", Register),
+		rest.Post("/checkExists", CheckExists),
 
 		rest.Get("/keys", KeysList),
 		rest.Post("/keys", KeyCreate),
@@ -133,6 +134,27 @@ func Register(w rest.ResponseWriter, r *rest.Request) {
 	userRepository.SaveUserById(form.Id, string(bytes))
 	res, err = userRepository.GetUserById(form.Id)
 	log.Println(res, err)
+	w.WriteJson(map[string]string{"Status":"OK"})
+}
+
+func CheckExists(w rest.ResponseWriter, r *rest.Request) {
+	var form struct {
+		Id string      `json:"username"`
+		Pass  string   `json:"password"`
+	}
+	r.DecodeJsonPayload(&form)
+
+	if form.Id == "" {
+		rest.Error(w, "Invalid input", 400)
+		return
+	}
+
+	res, _ := userRepository.GetUserById(form.Id)
+	if res == "" {
+		rest.Error(w, "[username] not exists", 400)
+		return
+	}
+
 	w.WriteJson(map[string]string{"Status":"OK"})
 }
 

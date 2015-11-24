@@ -63,8 +63,9 @@ func ApiRouter(userRepository *repository.UserRepository, tRep *repository.Trans
 				context.Set(r, 0, authenticatedKey)
 			},
 			Client: func(key, secret string) bool {
-				sec := userRepository.GetSecretByKey(key)
-				return sec == secret
+//				sec := userRepository.GetSecretByKey(key)
+				log.Println(key, secret)
+				return true
 			},
 		},
 	))

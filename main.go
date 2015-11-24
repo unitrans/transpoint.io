@@ -31,7 +31,7 @@ func init() {
 	godotenv.Load()
 	redisClient = storage.RedisClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
 	//	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
-	translator = t.NewYandexTranslator(os.Getenv("Y_TR_KEY"))
+	translator = t.NewGoogleTranslator(os.Getenv("G_TR_KEY"))
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))
 	}
@@ -53,7 +53,7 @@ func main() {
 	userRepository := repository.NewUserRepository(redisClient)
 	transRepository := repository.NewTranslationRepository(redisClient)
 
-	http.Handle("/v1/", http.StripPrefix("/v1/", scenario.ApiRouter(userRepository, transRepository, translator)))
+	http.Handle("/v1/", http.StripPrefix("/v1", scenario.ApiRouter(userRepository, transRepository, translator)))
 	http.Handle("/webapp/", http.StripPrefix("/webapp", scenario.WebRouter(userRepository, cookieStore)))
 	http.Handle("/webapi/", http.StripPrefix("/webapi", scenario.NewWebApi()))
 	http.HandleFunc("/ping", scenario.ApiPing())

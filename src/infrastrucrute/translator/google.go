@@ -15,23 +15,14 @@ type GoogleTranslator struct {
 	key string
 }
 
-func NewGoogleTranslator(key string) *GoogleTranslator {
+func NewGoogleTranslator(key string) ITranslateBackend {
 	return &GoogleTranslator{client:initClient(), key:key}
 }
 
-func (t *GoogleTranslator) Translate(text string, languages []string) *TranslationContainer {
-	container := &TranslationContainer{
-		Translations:TranslationBag{},
-	}
-
-	data := t.TranslateOne(text, "ru")
-	log.Println(data)
-
-	return container
-}
-
-func (t *GoogleTranslator) TranslateOne(text string, language string) (data *GoogleResponse){
-	req, _ := http.NewRequest("GET", GT_URL+"?"+ t.getQueryString(text, "ru"), nil)
+func (t *GoogleTranslator) TranslateOne(text string, language string) (IBackendResponse){
+	data := &GoogleResponse{}
+	data.Lang = language
+	req, _ := http.NewRequest("GET", GT_URL+"?"+ t.getQueryString(text, language), nil)
 
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -41,7 +32,7 @@ func (t *GoogleTranslator) TranslateOne(text string, language string) (data *Goo
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 		log.Println(err)
 	}
-	return
+	return data
 }
 
 func (t *GoogleTranslator) getQueryString(text, lang string)string{
@@ -53,6 +44,7 @@ func (t *GoogleTranslator) getQueryString(text, lang string)string{
 }
 
 type GoogleResponse struct {
+	Lang string
 	Data struct {
 		Translations []struct{
 			Text string `json:"translatedText"`
@@ -67,4 +59,8 @@ func(r *GoogleResponse) GetText() string{
 
 func(r *GoogleResponse) GetSource() string{
 	return r.Data.Translations[0].Source
+}
+
+func(r *GoogleResponse) GetLang() string{
+	return r.Lang
 }

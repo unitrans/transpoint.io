@@ -6,6 +6,7 @@ import (
 	"gopkg.in/redis.v3"
 	"errors"
 	"strings"
+	"encoding/json"
 )
 
 func NewTranslationRepository(redis *redis.Client) *TranslationRepository {
@@ -20,6 +21,7 @@ type TranslationBag struct {
 	Id           string `json:"id"`
 	Source       string `json:"source"`
 	Original     string `json:"original"`
+	Meta     	 interface{} `json:"meta"`
 	Translations map[string]string `json:"translations"`
 }
 
@@ -71,19 +73,27 @@ func (d *TranslationRepository) GetAll(key string) (bag TranslationBag, err erro
 		err = NotFoundError
 		return
 	}
+	var metaDecoded interface{}
+	if meta, ok := data["meta"]; ok {
+		json.Unmarshal([]byte(meta), &metaDecoded)
+	}
 
 	bag.SetId(key)
 	bag.Source = data["source"]
 	bag.Original = data["original"]
+	bag.Meta = metaDecoded
+	delete(data, "meta")
 	delete(data, "source")
 	delete(data, "original")
 	bag.Translations = data
 	return
 }
 
-func (d *TranslationRepository) Save(key, source, original string, translations map[string]string) error {
+func (d *TranslationRepository) Save(key, source, original string, translations map[string]string, meta interface{}) error {
 	var transSlice []string
 	transSlice = append(transSlice, "original", original)
+	metaEnc , _ := json.Marshal(meta)
+	transSlice = append(transSlice, "meta", string(metaEnc))
 	for lang, trans := range translations {
 		transSlice = append(transSlice, lang, trans)
 	}

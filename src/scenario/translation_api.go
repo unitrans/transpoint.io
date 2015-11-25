@@ -155,8 +155,13 @@ func SmartSave(request *RequestObject, id string) (bag repository.TranslationBag
 	if 0 == newLng {
 		return
 	}
+
+	meta := make(map[string]interface{})
 	container := translator.Translate(request.Text, langs)
-	transRepository.Save(id, container.Source, request.Text, container.Translations)
+	meta["raw"] = container.RawTranslations
+
+
+	transRepository.Save(id, container.Source, request.Text, container.Translations, meta)
 	bag, err = transRepository.GetAll(id)
 	log.Println(bag, err)
 	return

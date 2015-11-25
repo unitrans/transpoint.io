@@ -30,8 +30,11 @@ var (
 func init() {
 	godotenv.Load()
 	redisClient = storage.RedisClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
-	//	driver = storage.NewRedisDriver(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
-	translator = t.NewTranslateAdapter(t.NewGoogleTranslator(os.Getenv("G_TR_KEY")))
+	translator = t.NewTranslateAdapter(
+		[]t.ITranslateBackend{
+			t.NewGoogleTranslator(os.Getenv("G_TR_KEY")),
+			t.NewYandexTranslator(os.Getenv("Y_TR_KEY")),
+		})
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))
 	}
@@ -59,7 +62,7 @@ func main() {
 	http.HandleFunc("/ping", scenario.ApiPing())
 	http.HandleFunc("/", scenario.WebIndexPage)
 
-	initProfiler()
+	//initProfiler()
 
 	log.Printf("Info: Starting application on port %s", port)
 	log.Fatal(http.ListenAndServe(":" + port, nil))

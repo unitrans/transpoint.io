@@ -9,20 +9,12 @@ import (
 	"github.com/facebookgo/httpcontrol"
 	"sync"
 	"log"
+//	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/translation_middleware"
 )
 
 // Translator interface
 type Translator interface {
 	Translate(text string, languages []string) *TranslationContainer
-}
-
-// TranslationBag hashmap
-type TranslationBag map[string]string
-
-// TranslationContainer struct
-type TranslationContainer struct {
-	Translations TranslationBag
-	Source       string
 }
 
 var (
@@ -50,59 +42,82 @@ type IBackendResponse interface {
 	GetText() string
 	GetSource() string
 	GetLang() string
+	GetName() string
 }
 
 type ITranslateBackend interface {
 	TranslateOne(text string, language string) (data IBackendResponse)
+	GetName() string
 }
 
 type TranslateAdapter struct {
 	client *http.Client
-	translateBackend ITranslateBackend
+	translateBackend []ITranslateBackend
+//	middleware []translation_middleware.ITranslationMiddleware
+
 }
 
-func NewTranslateAdapter(back ITranslateBackend) *TranslateAdapter {
+func NewTranslateAdapter(back []ITranslateBackend) *TranslateAdapter {
 	return &TranslateAdapter{client:initClient(), translateBackend:back}
 }
 
 func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationContainer {
-	container := &TranslationContainer{
-		Translations:TranslationBag{},
-	}
+	container := t.newContainer()
+	container.Original = text
 
-	set := make(map[string]bool)
-	for _, val := range langs {
-		set[val] = true
-	}
-	var languages []string
-	for lang, _ := range set{
-		languages = append(languages, lang)
-	}
-	processor := NewEmojiProcessor()
-	text = processor.Process(text)
+	langs = array_uniq(langs)
+//	processor := NewEmojiProcessor()
+//	text = processor.Process(text)
 
-	responseChan := make(chan IBackendResponse, len(languages))
+	responseChan := make(chan IBackendResponse, len(langs))
 
-	go t.doRequests(text, languages, responseChan)
+	go t.doRequests(text, langs, responseChan)
 	for resp := range responseChan {
 		log.Println(resp)
-		container.Translations[resp.GetLang()] = processor.Restore(resp.GetText())
+		container.RawTranslations[resp.GetName()][resp.GetLang()] = resp.GetText()
 		container.Source = resp.GetSource()
 	}
+	container.Translations = container.RawTranslations["google"]
 	return container
 }
 
 func (t *TranslateAdapter) doRequests(text string, languages []string, c chan<- IBackendResponse){
 	wg := &sync.WaitGroup{}
 	for _, v := range languages {
-		wg.Add(1)
-		go func(text, lang string){
-			defer wg.Done()
-			resp := t.translateBackend.TranslateOne(text, lang)
-			log.Println(lang, text, resp)
-			c <- resp
-		}(text, v)
+		for _, back := range t.translateBackend{
+			wg.Add(1)
+			go func(text, lang string, backend ITranslateBackend){
+				defer wg.Done()
+				resp := backend.TranslateOne(text, lang)
+				log.Println(lang, text, resp)
+				c <- resp
+			}(text, v, back)
+		}
+
 	}
 	wg.Wait()
 	close(c)
+}
+
+func (t *TranslateAdapter) newContainer() *TranslationContainer{
+	raw := make(map[string]TranslationBag, len(t.translateBackend))
+	for _, back := range t.translateBackend {
+		raw[back.GetName()] = TranslationBag{}
+	}
+	return &TranslationContainer{
+		Translations:TranslationBag{},
+		RawTranslations:raw,
+	}
+}
+
+func array_uniq(langs []string) []string {
+	set := make(map[string]struct{})
+	for _, val := range langs {
+		set[val] = struct{}{}
+	}
+	var languages []string
+	for lang, _ := range set{
+		languages = append(languages, lang)
+	}
+	return languages
 }

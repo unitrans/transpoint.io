@@ -43,6 +43,12 @@ func (t *GoogleTranslator) getQueryString(text, lang string)string{
 	return form.Encode()
 }
 
+
+
+func(r *GoogleTranslator) GetName() string{
+	return "google"
+}
+
 type GoogleResponse struct {
 	Lang string
 	Data struct {
@@ -63,4 +69,8 @@ func(r *GoogleResponse) GetSource() string{
 
 func(r *GoogleResponse) GetLang() string{
 	return r.Lang
+}
+
+func(r *GoogleResponse) GetName() string{
+	return "google"
 }

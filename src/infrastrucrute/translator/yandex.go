@@ -47,6 +47,10 @@ func (t *YandexTranslator) getQueryString(text, lang string)string{
 	return form.Encode()
 }
 
+func(r *YandexTranslator) GetName() string{
+	return "yandex"
+}
+
 type YandexResponse struct {
 	Code int `json:"code"`
 	Lang string `json:"lang"`
@@ -61,4 +65,7 @@ func(r *YandexResponse) GetLang() string{
 }
 func(r *YandexResponse) GetSource() string{
 	return strings.Split(r.Lang, "-")[0]
+}
+func(r *YandexResponse) GetName() string{
+	return "yandex"
 }

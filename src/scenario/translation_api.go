@@ -85,7 +85,7 @@ func ApiPing() func(http.ResponseWriter, *http.Request) {
 func wrap(action Action) (func(http.ResponseWriter, *http.Request)) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		v, code := action(w, r)
-		log.Println(r)
+//		log.Println(r)
 
 		callback := r.URL.Query().Get("callback")
 		if callback == "" {
@@ -130,7 +130,7 @@ func Save(w http.ResponseWriter, r *http.Request) (bag interface{}, status int) 
 
 func SmartSave(request *RequestObject, id string) (bag repository.TranslationBag, newLng int) {
 	bag, err := transRepository.GetAll(id)
-	log.Println(bag, err)
+	log.Println(err)
 
 	langs := request.Lang
 	if err == nil {
@@ -163,7 +163,7 @@ func SmartSave(request *RequestObject, id string) (bag repository.TranslationBag
 
 	transRepository.Save(id, container.Source, request.Text, container.Translations, meta)
 	bag, err = transRepository.GetAll(id)
-	log.Println(bag, err)
+//	log.Println(bag, err)
 	return
 }
 

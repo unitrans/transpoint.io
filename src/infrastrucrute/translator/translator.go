@@ -89,7 +89,7 @@ func (t *TranslateAdapter) doRequests(text string, languages []string, c chan<- 
 			go func(text, lang string, backend ITranslateBackend){
 				defer wg.Done()
 				resp := backend.TranslateOne(text, lang)
-				log.Println(lang, text, resp)
+				log.Println("doRequests", lang, text, resp)
 				c <- resp
 			}(text, v, back)
 		}

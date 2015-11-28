@@ -79,7 +79,7 @@ func NewWebApi() http.Handler {
 	})
 	api.Use(&rest.IfMiddleware{
 		Condition: func(request *rest.Request) bool {
-			return request.URL.Path != "/login" && request.URL.Path != "/refresh" && request.URL.Path != "/register" && request.URL.Path != "/checkExists"
+			return request.URL.Path != "/login" && request.URL.Path != "/refresh" && request.URL.Path != "/register" && request.URL.Path != "/checkExists" && request.URL.Path != "/tr"
 		},
 		IfTrue: jwt_middleware,
 	})
@@ -100,6 +100,8 @@ func NewWebApi() http.Handler {
 		rest.Get("/keys", KeysList),
 		rest.Post("/keys", KeyCreate),
 		rest.Delete("/keys/*key", KeyDelete),
+
+		rest.Post("/tr", Translate),
 	)
 	api.SetApp(api_router)
 	return api.MakeHandler()
@@ -213,4 +215,12 @@ func KeyDelete(w rest.ResponseWriter, r *rest.Request){
 }
 
 
+
+func Translate(w rest.ResponseWriter, r *rest.Request){
+
+	request := &RequestObject{}
+	r.DecodeJsonPayload(request)
+	c := translator.Translate(request.Text, request.Lang)
+	w.WriteJson(c)
+}
 

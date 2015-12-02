@@ -42,7 +42,6 @@ type IBackendResponse interface {
 	GetText() string
 	GetSource() string
 	GetLang() string
-	GetName() string
 }
 
 type ITranslateBackend interface {
@@ -69,28 +68,39 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 //	processor := NewEmojiProcessor()
 //	text = processor.Process(text)
 
-	responseChan := make(chan IBackendResponse, len(langs))
+	responseChan := make(chan *RawTransData, len(langs))
 
 	go t.doRequests(text, langs, responseChan)
 	for resp := range responseChan {
 		log.Println(resp)
-		container.RawTranslations[resp.GetName()][resp.GetLang()] = resp.GetText()
-		container.Source = resp.GetSource()
+		container.RawTranslations[resp.Name][resp.Lang] = resp.Translation
+		if "google" == resp.Name {
+			container.Source = resp.Source
+		}
+		container.RawTransData = append(container.RawTransData, resp)
 	}
 	container.Translations = container.RawTranslations["google"]
 	return container
 }
 
-func (t *TranslateAdapter) doRequests(text string, languages []string, c chan<- IBackendResponse){
+func (t *TranslateAdapter) doRequests(text string, languages []string, c chan<- *RawTransData){
 	wg := &sync.WaitGroup{}
 	for _, v := range languages {
 		for _, back := range t.translateBackend{
 			wg.Add(1)
 			go func(text, lang string, backend ITranslateBackend){
 				defer wg.Done()
+				t := time.Now()
 				resp := backend.TranslateOne(text, lang)
-				log.Println("doRequests", lang, text, resp)
-				c <- resp
+
+				raw := &RawTransData{
+					Source:resp.GetSource(),
+					Lang:resp.GetLang(),
+					Name:backend.GetName(),
+					Translation:resp.GetText(),
+					Time: time.Since(t) / time.Millisecond,
+				}
+				c <- raw
 			}(text, v, back)
 		}
 

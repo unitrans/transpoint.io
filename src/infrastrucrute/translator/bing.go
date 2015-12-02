@@ -64,8 +64,8 @@ func(r *BingResponse) GetText() string{
 	return r.Data.Results[0].Text
 }
 
-func(r *BingResponse) GetSource() string{
-	return "na"
+func(r *BingResponse) GetSource() (s string){
+	return
 }
 
 func(r *BingResponse) GetLang() string{

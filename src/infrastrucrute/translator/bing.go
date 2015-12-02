@@ -67,7 +67,7 @@ func(r *BingResponse) GetText() string{
 }
 
 func(r *BingResponse) GetSource() string{
-	return ""
+	return "na"
 }
 
 func(r *BingResponse) GetLang() string{

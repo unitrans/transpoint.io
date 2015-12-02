@@ -34,6 +34,7 @@ func init() {
 		[]t.ITranslateBackend{
 			t.NewGoogleTranslator(os.Getenv("G_TR_KEY")),
 			t.NewYandexTranslator(os.Getenv("Y_TR_KEY")),
+			t.NewBingTranslator(os.Getenv("B_TR_KEY")),
 		})
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))

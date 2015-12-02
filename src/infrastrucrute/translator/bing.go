@@ -23,9 +23,7 @@ func (t *BingTranslator) TranslateOne(text string, language string) (IBackendRes
 	data := &BingResponse{}
 	data.Lang = language
 	req, _ := http.NewRequest("GET", BG_URL+"?"+ t.getQueryString(text, language), nil)
-	log.Println(GT_URL+"?"+ t.getQueryString(text, language))
 	req.SetBasicAuth(t.key, t.key)
-	log.Println(req.Header.Get("Authorization"))
 
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -50,7 +48,7 @@ func (t *BingTranslator) getQueryString(text, lang string)string{
 
 
 func(r *BingTranslator) GetName() string{
-	return "Bing"
+	return "bing"
 }
 
 type BingResponse struct {

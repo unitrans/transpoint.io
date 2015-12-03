@@ -16,6 +16,7 @@ import (
 
 	"github.com/urakozz/transpoint.io/src/infrastrucrute/storage"
 	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
+	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
 )
 
 
@@ -34,8 +35,9 @@ func init() {
 		[]t.ITranslateBackend{
 			t.NewGoogleTranslator(os.Getenv("G_TR_KEY")),
 			t.NewYandexTranslator(os.Getenv("Y_TR_KEY")),
-			t.NewBingTranslator(os.Getenv("B_TR_KEY")),
+//			t.NewBingTranslator(os.Getenv("B_TR_KEY")),
 		})
+	translator.AddParticular(&particular.AbbyyLingvoLiveTranslator{})
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))
 	}

@@ -2,7 +2,10 @@
 // Proprietary license.
 package translator
 
-import "time"
+import (
+	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
+	"time"
+)
 
 // TranslationBag hashmap
 type TranslationBag map[string]string
@@ -16,12 +19,29 @@ type RawTransData struct {
 	Time        time.Duration
 }
 
+type RawParticularData struct {
+	Original      string
+	Source        string
+	Lang          string
+	Name          string
+	ParticularBag []*ParticularItem
+	Time          time.Duration
+}
+
+type ParticularItem struct {
+	Order        int
+	Original     string
+	Time         time.Duration
+	Translations []particular.IParticularMeaning
+}
+
 // TranslationContainer struct
 type TranslationContainer struct {
-	Translations    TranslationBag
-	Original        string
-	Source          string
-	Meta            map[string]interface{}
-	RawTranslations map[string]TranslationBag
-	RawTransData    []*RawTransData
+	Translations      TranslationBag
+	Original          string
+	Source            string
+	Meta              map[string]interface{}
+	RawTranslations   map[string]TranslationBag
+	RawTransData      []*RawTransData
+	RawParticularData []*RawParticularData
 }

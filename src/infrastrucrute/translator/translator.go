@@ -10,11 +10,14 @@ import (
 	"sync"
 	"log"
 //	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/translation_middleware"
+	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
+	"regexp"
 )
 
 // Translator interface
 type Translator interface {
 	Translate(text string, languages []string) *TranslationContainer
+	AddParticular(p particular.IParticularBackend)
 }
 
 var (
@@ -52,6 +55,7 @@ type ITranslateBackend interface {
 type TranslateAdapter struct {
 	client *http.Client
 	translateBackend []ITranslateBackend
+	translateParticular []particular.IParticularBackend
 //	middleware []translation_middleware.ITranslationMiddleware
 
 }
@@ -59,7 +63,10 @@ type TranslateAdapter struct {
 func NewTranslateAdapter(back []ITranslateBackend) *TranslateAdapter {
 	return &TranslateAdapter{client:initClient(), translateBackend:back}
 }
-
+func (t *TranslateAdapter) AddParticular(p particular.IParticularBackend){
+	p.SetClient(t.client)
+	t.translateParticular = append(t.translateParticular, p)
+}
 func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationContainer {
 	container := t.newContainer()
 	container.Original = text
@@ -69,8 +76,9 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 //	text = processor.Process(text)
 
 	responseChan := make(chan *RawTransData, len(langs))
+	responseChanParticular := make(chan *RawParticularData, len(langs))
 
-	go t.doRequests(text, langs, responseChan)
+	go t.doRequestsTranslators(text, langs, responseChan)
 	for resp := range responseChan {
 		log.Println(resp)
 		container.RawTranslations[resp.Name][resp.Lang] = resp.Translation
@@ -80,10 +88,16 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 		container.RawTransData = append(container.RawTransData, resp)
 	}
 	container.Translations = container.RawTranslations["google"]
+
+	go t.doRequestsParticular(text, container.Source, langs, responseChanParticular)
+	for resp := range responseChanParticular {
+		container.RawParticularData = append(container.RawParticularData, resp)
+	}
 	return container
 }
 
-func (t *TranslateAdapter) doRequests(text string, languages []string, c chan<- *RawTransData){
+func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTransData){
+
 	wg := &sync.WaitGroup{}
 	for _, v := range languages {
 		for _, back := range t.translateBackend{
@@ -102,6 +116,56 @@ func (t *TranslateAdapter) doRequests(text string, languages []string, c chan<- 
 				}
 				c <- raw
 			}(text, v, back)
+		}
+
+	}
+	wg.Wait()
+	close(c)
+}
+
+func (t *TranslateAdapter) doRequestsParticular(text, source string, languages []string, c chan<- *RawParticularData){
+
+	bag := regexp.MustCompile(`([\w\x7f-\xff])+`).FindAllString(text, -1)
+
+	wg := &sync.WaitGroup{}
+	for _, lang := range languages {
+		for _, back := range t.translateParticular{
+			wg.Add(1)
+			raw := &RawParticularData{
+				Original: text,
+				Source:source,
+				Lang:lang,
+				ParticularBag: make([]*ParticularItem, len(bag)),
+			}
+			go func(raw *RawParticularData, backend particular.IParticularBackend){
+				defer wg.Done()
+				t := time.Now()
+
+				partChan := make(chan *ParticularItem, len(bag))
+				wgSingle := &sync.WaitGroup{}
+				for index, word := range bag {
+					wgSingle.Add(1)
+					item := &ParticularItem{Order: index, Original: word}
+					go func(item *ParticularItem,raw *RawParticularData, backend particular.IParticularBackend, c chan<- *ParticularItem){
+						defer wgSingle.Done()
+						t1 := time.Now()
+						resp := backend.TranslateOne(item.Original, raw.Source, raw.Lang)
+						item.Translations = resp.GetMeanings()
+						item.Time = time.Since(t1) / time.Millisecond
+						c <- item
+					}(item, raw, backend, partChan)
+				}
+				wgSingle.Wait()
+				close(partChan)
+
+				for item := range partChan {
+					raw.ParticularBag[item.Order] = item
+				}
+
+				raw.Time = time.Since(t) / time.Millisecond
+
+				c <- raw
+			}(raw, back)
 		}
 
 	}

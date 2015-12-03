@@ -124,17 +124,19 @@ func (t *LingvoLiveTranslatorResponseFull) GetMeanings() []IParticularMeaning {
 		doc, _ := goquery.NewDocumentFromReader(strings.NewReader(v.BodyHtml))
 
 		table := doc.Find(".article .article-body .article-body-items")
-		table.Find(".article-body-items .article-text-wrap .article-text").Each(func(i int, s *goquery.Selection) {
-			value := strings.TrimSpace(s.Text())
-			value = strings.Trim(value, ";")
-			value = strings.Trim(value, ",")
-			if len(value) > 0 && value[0] == '<' {
-				value = ""
+		table.Find(".article-body-items").Each(func(i int, s *goquery.Selection) {
+
+			if s.Find(".paragraph-marker-top-level").Text() == "" {
+				return
 			}
+
+			value := s.Find(".article-text-wrap").Text()
+			value = strings.TrimSpace(value)
 			if "" != value {
 				meaning.All = append(meaning.All, value)
 			}
-			if len(meaning.All) > 0 {
+			if len(meaning.All) > 0 && meaning.Text == "" {
+
 				meaning.Text = meaning.All[0]
 			}
 		})

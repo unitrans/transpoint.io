@@ -140,6 +140,7 @@ func (t *TranslateAdapter) doRequestsParticular(text, source string, languages [
 				Original: text,
 				Source:source,
 				Lang:lang,
+				Name: back.GetName(),
 				ParticularBag: make([]*ParticularItem, len(bag)),
 			}
 			go func(raw *RawParticularData, backend particular.IParticularBackend){

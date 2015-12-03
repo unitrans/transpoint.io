@@ -1367,6 +1367,20 @@ func (c *commandable) ClientPause(dur time.Duration) *BoolCmd {
 	return cmd
 }
 
+// ClientSetName assigns a name to the one of many connections in the pool.
+func (c *commandable) ClientSetName(name string) *BoolCmd {
+	cmd := NewBoolCmd("CLIENT", "SETNAME", name)
+	c.Process(cmd)
+	return cmd
+}
+
+// ClientGetName returns the name of the one of many connections in the pool.
+func (c *Client) ClientGetName() *StringCmd {
+	cmd := NewStringCmd("CLIENT", "GETNAME")
+	c.Process(cmd)
+	return cmd
+}
+
 func (c *commandable) ConfigGet(parameter string) *SliceCmd {
 	cmd := NewSliceCmd("CONFIG", "GET", parameter)
 	cmd._clusterKeyPos = 0
@@ -1676,22 +1690,17 @@ func (c *commandable) GeoAdd(key string, geoLocation ...*GeoLocation) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) GeoRadius(query *GeoRadiusQuery) *GeoLocationCmd {
-	args := make([]interface{}, 6)
-	args[0] = "GEORADIUS"
-	args[1] = query.Key
-	args[2] = query.Longitude
-	args[3] = query.Latitude
-	args[4] = query.Radius
+func (c *commandable) geoRadius(args []interface{}, query *GeoRadiusQuery) *GeoLocationCmd {
+	args = append(args, query.Radius)
 	if query.Unit != "" {
-		args[5] = query.Unit
+		args = append(args, query.Unit)
 	} else {
-		args[5] = "km"
+		args = append(args, "km")
 	}
-	if query.WithCoordinates {
+	if query.WithCoord {
 		args = append(args, "WITHCOORD")
 	}
-	if query.WithDistance {
+	if query.WithDist {
 		args = append(args, "WITHDIST")
 	}
 	if query.WithGeoHash {
@@ -1703,8 +1712,38 @@ func (c *commandable) GeoRadius(query *GeoRadiusQuery) *GeoLocationCmd {
 	if query.Sort != "" {
 		args = append(args, query.Sort)
 	}
-
 	cmd := NewGeoLocationCmd(args...)
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) GeoRadius(key string, longitude, latitude float64, query *GeoRadiusQuery) *GeoLocationCmd {
+	args := []interface{}{"GEORADIUS", key, longitude, latitude}
+	return c.geoRadius(args, query)
+}
+
+func (c *commandable) GeoRadiusByMember(key, member string, query *GeoRadiusQuery) *GeoLocationCmd {
+	args := []interface{}{"GEORADIUSBYMEMBER", key, member}
+	return c.geoRadius(args, query)
+}
+
+func (c *commandable) GeoDist(key string, member1, member2, unit string) *FloatCmd {
+	if unit == "" {
+		unit = "km"
+	}
+	cmd := NewFloatCmd("GEODIST", key, member1, member2, unit)
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) GeoHash(key string, members ...string) *StringSliceCmd {
+	args := make([]interface{}, 2+len(members))
+	args[0] = "GEOHASH"
+	args[1] = key
+	for i, member := range members {
+		args[2+i] = member
+	}
+	cmd := NewStringSliceCmd(args...)
 	c.Process(cmd)
 	return cmd
 }

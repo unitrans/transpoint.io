@@ -1,6 +1,6 @@
 # Render [![GoDoc](http://godoc.org/github.com/unrolled/render?status.svg)](http://godoc.org/github.com/unrolled/render) [![Build Status](https://travis-ci.org/unrolled/render.svg)](https://travis-ci.org/unrolled/render)
 
-Render is a package that provides functionality for easily rendering JSON, XML, binary data, and HTML templates. This package is based on the [Martini](https://github.com/go-martini/martini) [render](https://github.com/martini-contrib/render) work.
+Render is a package that provides functionality for easily rendering JSON, XML, text, binary data, and HTML templates. This package is based on the [Martini](https://github.com/go-martini/martini) [render](https://github.com/martini-contrib/render) work.
 
 ## Usage
 Render can be used with pretty much any web framework providing you can access the `http.ResponseWriter` from your handler. The rendering functions simply wraps Go's existing functionality for marshaling and rendering data.
@@ -9,6 +9,7 @@ Render can be used with pretty much any web framework providing you can access t
 - JSON: Uses the [encoding/json](http://golang.org/pkg/encoding/json/) package to marshal data into a JSON-encoded response.
 - XML: Uses the [encoding/xml](http://golang.org/pkg/encoding/xml/) package to marshal data into an XML-encoded response.
 - Binary data: Passes the incoming data straight through to the `http.ResponseWriter`.
+- Text: Passes the incoming string straight through to the `http.ResponseWriter`.
 
 ~~~ go
 // main.go
@@ -39,6 +40,10 @@ func main() {
         r.Data(w, http.StatusOK, []byte("Some binary data here."))
     })
 
+    mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+        r.Text(w, http.StatusOK, "Plain text here")
+    })
+
     mux.HandleFunc("/json", func(w http.ResponseWriter, req *http.Request) {
         r.JSON(w, http.StatusOK, map[string]string{"hello": "json"})
     })
@@ -57,7 +62,7 @@ func main() {
         r.HTML(w, http.StatusOK, "example", nil)
     })
 
-    http.ListenAndServe("0.0.0.0:3000", mux)
+    http.ListenAndServe("127.0.0.1:3000", mux)
 }
 ~~~
 
@@ -79,7 +84,7 @@ r := render.New(render.Options{
     AssetNames: func() []string { // Return a list of asset names for the Asset function
       return []string{"filename.tmpl"}
     },
-    Layout: "layout", // Specify a layout template. Layouts can call {{ yield }} to render the current template.
+    Layout: "layout", // Specify a layout template. Layouts can call {{ yield }} to render the current template or {{ block "css" }} to render a block from the current template
     Extensions: []string{".tmpl", ".html"}, // Specify extensions to load for templates.
     Funcs: []template.FuncMap{AppHelpers}, // Specify helper function maps for templates to access.
     Delims: render.Delims{"{[{", "}]}"}, // Sets delimiters to the specified strings.
@@ -92,6 +97,7 @@ r := render.New(render.Options{
     IsDevelopment: true, // Render will now recompile the templates on every HTML response.
     UnEscapeHTML: true, // Replace ensure '&<>' are output correctly (JSON only).
     StreamingJSON: true, // Streams the JSON response via json.Encoder.
+    RequireBlocks: true, // Return an error if a template is missing a block used in a layout.
 })
 // ...
 ~~~
@@ -121,6 +127,7 @@ r := render.New(render.Options{
     IsDevelopment: false,
     UnEscapeHTML: false,
     StreamingJSON: false,
+    RequireBlocks: false,
 })
 ~~~
 
@@ -155,7 +162,7 @@ You can also load templates from memory by providing the Asset and AssetNames op
 e.g. when generating an asset file using [go-bindata](https://github.com/jteeuwen/go-bindata).
 
 ### Layouts
-Render provides a `yield` function for layouts to access:
+Render provides `yield` and `block` functions for layouts to access:
 ~~~ go
 // ...
 r := render.New(render.Options{
@@ -169,10 +176,16 @@ r := render.New(render.Options{
 <html>
   <head>
     <title>My Layout</title>
+    <!-- Render the block template called `css-$current_template` here -->
+    {{ block "css" }}
   </head>
   <body>
+    <!-- render the block template called `header-$current_template` here -->
+    {{ block "header" }}
     <!-- Render the current template here -->
     {{ yield }}
+    <!-- render the block template called `footer-$current_template` here -->
+    {{ block "footer" }}
   </body>
 </html>
 ~~~
@@ -189,6 +202,23 @@ r := render.New(render.Options{
   </body>
 </html>
 ~~~
+
+Blocks are defined by individual templates as seen below. The block template's
+name needs to be defined as "{block name}-{template name}".
+~~~ html
+<!-- templates/home.tmpl -->
+{{ define "header-home" }}
+<h1>Home</h1>
+{{ end }}
+
+{{ define "footer-home"}}
+<p>The End</p>
+{{ end }}
+~~~
+
+By default, the template is not required to define all blocks referenced in the
+layout. If you want an error to be returned when a template does not define a
+block, set `Options.RequireBlocks = true`.
 
 ### Character Encodings
 Render will automatically set the proper Content-Type header based on which function you call. See below for an example of what the default settings would output (note that UTF-8 is the default, and binary data does not output the charset):
@@ -229,6 +259,11 @@ func main() {
         r.XML(w, http.StatusOK, ExampleXml{One: "hello", Two: "xml"})
     })
 
+    // This will set the Content-Type header to "text/plain; charset=UTF-8".
+    mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+        r.Text(w, http.StatusOK, "Plain text here")
+    })
+
     // This will set the Content-Type header to "text/html; charset=UTF-8".
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
@@ -236,7 +271,7 @@ func main() {
         r.HTML(w, http.StatusOK, "example", nil)
     })
 
-    http.ListenAndServe("0.0.0.0:3000", mux)
+    http.ListenAndServe("127.0.0.1:3000", mux)
 }
 ~~~
 
@@ -280,6 +315,11 @@ func main() {
         r.XML(w, http.StatusOK, ExampleXml{One: "hello", Two: "xml"})
     })
 
+    // This will set the Content-Type header to "text/plain; charset=ISO-8859-1".
+    mux.HandleFunc("/text", func(w http.ResponseWriter, req *http.Request) {
+        r.Text(w, http.StatusOK, "Plain text here")
+    })
+
     // This will set the Content-Type header to "text/html; charset=ISO-8859-1".
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
@@ -287,7 +327,7 @@ func main() {
         r.HTML(w, http.StatusOK, "example", nil)
     })
 
-    http.ListenAndServe("0.0.0.0:3000", mux)
+    http.ListenAndServe("127.0.0.1:3000", mux)
 }
 ~~~
 
@@ -313,9 +353,10 @@ func main() {
 	e := echo.New()
 
 	// Routes
-	e.Get("/", func(c *echo.Context) {
-		r.JSON(c.Response, http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
-	})
+	e.Get("/", func(c *echo.Context) error {
+        r.JSON(c.Response().Writer(), http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
+        return nil
+    })
 
 	e.Run(":3000")
 }
@@ -448,6 +489,6 @@ func main() {
         r.JSON(ctx, http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
     })
 
-    web.Run("0.0.0.0:3000")
+    web.Run(":3000")
 }
 ~~~

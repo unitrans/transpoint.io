@@ -7,6 +7,15 @@
 			"Rev": "c1973d4599b099526c59ef7229167af1f353d3c8"
 		},
 		{
+			"ImportPath": "github.com/PuerkitoBio/goquery",
+			"Comment": "v0.3.2-79-gb444041",
+			"Rev": "b4440419d81240f8451a505b2f806c853bc2befc"
+		},
+		{
+			"ImportPath": "github.com/andybalholm/cascadia",
+			"Rev": "6122e68c2642b7b75c538a63b15168c6c80fb757"
+		},
+		{
 			"ImportPath": "github.com/ant0ine/go-json-rest/rest",
 			"Comment": "v3.2.0-11-g2af9d00",
 			"Rev": "2af9d0034afcd83101abb1945f2a65ddbd563719"
@@ -39,15 +48,15 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "ad4d7a5882b961e07e2626045eb995c022ac6664"
+			"Rev": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b"
 		},
 		{
 			"ImportPath": "github.com/gorilla/securecookie",
-			"Rev": "e8ab2fa5d114bbc278da9bd20dc67553bed7a3c4"
+			"Rev": "e95799a481bbcc3d01c2ad5178524cb8bec9f370"
 		},
 		{
 			"ImportPath": "github.com/gorilla/sessions",
-			"Rev": "f61c3ec2cf65d69e7efedfd4d060fe128882c951"
+			"Rev": "f7261893ca3ea922c30eabe742c036d2c1de6e0a"
 		},
 		{
 			"ImportPath": "github.com/joho/godotenv",
@@ -69,7 +78,7 @@
 		},
 		{
 			"ImportPath": "github.com/satori/go.uuid",
-			"Rev": "afe1e2ddf0f05b7c29d388a3f8e76cb15c2231ca"
+			"Rev": "08f0718b61e95ddba0ade3346725fe0e4bf28ca6"
 		},
 		{
 			"ImportPath": "github.com/urakozz/go-emoji",
@@ -80,17 +89,21 @@
 			"Rev": "78eb42586663f87fcfdb39d7f8c02da8b9896e2e"
 		},
 		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "d9558e5c97f85372afee28cf2b6059d7d3818919"
+		},
+		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
 			"Rev": "bda20d5067a03094fc6762f7ead53027afac5f28"
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",
-			"Comment": "v3.2.12",
-			"Rev": "0880b0b20c4d37f3ef05a561dbd66d138c795d6b"
+			"Comment": "v3.2.13",
+			"Rev": "96fcac6a430e74927b638b73f373ad4d99de005b"
 		},
 		{
 			"ImportPath": "gopkg.in/unrolled/render.v1",
-			"Rev": "d4edd394101358a4f8e462c43f884d9af99a4d30"
+			"Rev": "d7c3df429697d42cc63332fa9ab88fef7a0fa6f7"
 		}
 	]
 }

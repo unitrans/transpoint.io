@@ -12,18 +12,20 @@ import (
 )
 
 const (
-	// ContentType header constant.
-	ContentType = "Content-Type"
-	// ContentLength header constant.
-	ContentLength = "Content-Length"
 	// ContentBinary header value for binary data.
 	ContentBinary = "application/octet-stream"
+	// ContentHTML header value for HTML data.
+	ContentHTML = "text/html"
 	// ContentJSON header value for JSON data.
 	ContentJSON = "application/json"
 	// ContentJSONP header value for JSONP data.
 	ContentJSONP = "application/javascript"
-	// ContentHTML header value for HTML data.
-	ContentHTML = "text/html"
+	// ContentLength header constant.
+	ContentLength = "Content-Length"
+	// ContentText header value for Text data.
+	ContentText = "text/plain"
+	// ContentType header constant.
+	ContentType = "Content-Type"
 	// ContentXHTML header value for XHTML data.
 	ContentXHTML = "application/xhtml+xml"
 	// ContentXML header value for XML data.
@@ -36,6 +38,9 @@ const (
 var helperFuncs = template.FuncMap{
 	"yield": func() (string, error) {
 		return "", fmt.Errorf("yield called with no layout defined")
+	},
+	"block": func() (string, error) {
+		return "", fmt.Errorf("block called with no layout defined")
 	},
 	"current": func() (string, error) {
 		return "", nil
@@ -84,6 +89,8 @@ type Options struct {
 	UnEscapeHTML bool
 	// Streams JSON responses instead of marshalling prior to sending. Default is false.
 	StreamingJSON bool
+	// Require that all blocks executed in the layout are implemented in all templates using the layout. Default is false.
+	RequireBlocks bool
 }
 
 // HTMLOptions is a struct for overriding some rendering Options for specific HTML call.
@@ -245,6 +252,53 @@ func (r *Render) compileTemplatesFromAsset() {
 	}
 }
 
+// TemplateLookup is a wrapper around template.Lookup and returns
+// the template with the given name that is associated with t, or nil
+// if there is no such template
+func (r *Render) TemplateLookup(t string) *template.Template {
+	return r.templates.Lookup(t)
+}
+
+func (r *Render) execute(name string, binding interface{}) (*bytes.Buffer, error) {
+	buf := new(bytes.Buffer)
+	return buf, r.templates.ExecuteTemplate(buf, name, binding)
+}
+
+func (r *Render) addLayoutFuncs(name string, binding interface{}) {
+	funcs := template.FuncMap{
+		"yield": func() (template.HTML, error) {
+			buf, err := r.execute(name, binding)
+			// Return safe HTML here since we are rendering our own template.
+			return template.HTML(buf.String()), err
+		},
+		"current": func() (string, error) {
+			return name, nil
+		},
+		"block": func(blockName string) (template.HTML, error) {
+			fullBlockName := fmt.Sprintf("%s-%s", blockName, name)
+			if r.opt.RequireBlocks || r.TemplateLookup(fullBlockName) != nil {
+				buf, err := r.execute(fullBlockName, binding)
+				// Return safe HTML here since we are rendering our own template.
+				return template.HTML(buf.String()), err
+			}
+			return "", nil
+		},
+	}
+	if tpl := r.templates.Lookup(name); tpl != nil {
+		tpl.Funcs(funcs)
+	}
+}
+
+func (r *Render) prepareHTMLOptions(htmlOpt []HTMLOptions) HTMLOptions {
+	if len(htmlOpt) > 0 {
+		return htmlOpt[0]
+	}
+
+	return HTMLOptions{
+		Layout: r.opt.Layout,
+	}
+}
+
 // Render is the generic function called by XML, JSON, Data, HTML, and can be called by custom implementations.
 func (r *Render) Render(w http.ResponseWriter, e Engine, data interface{}) {
 	err := e.Render(w, data)
@@ -253,20 +307,46 @@ func (r *Render) Render(w http.ResponseWriter, e Engine, data interface{}) {
 	}
 }
 
-// XML marshals the given interface object and writes the XML response.
-func (r *Render) XML(w http.ResponseWriter, status int, v interface{}) {
+// Data writes out the raw bytes as binary data.
+func (r *Render) Data(w http.ResponseWriter, status int, v []byte) {
 	head := Head{
-		ContentType: ContentXML + r.compiledCharset,
+		ContentType: ContentBinary,
 		Status:      status,
 	}
 
-	x := XML{
-		Head:   head,
-		Indent: r.opt.IndentXML,
-		Prefix: r.opt.PrefixXML,
+	d := Data{
+		Head: head,
 	}
 
-	r.Render(w, x, v)
+	r.Render(w, d, v)
+}
+
+// HTML builds up the response from the specified template and bindings.
+func (r *Render) HTML(w http.ResponseWriter, status int, name string, binding interface{}, htmlOpt ...HTMLOptions) {
+	// If we are in development mode, recompile the templates on every HTML request.
+	if r.opt.IsDevelopment {
+		r.compileTemplates()
+	}
+
+	opt := r.prepareHTMLOptions(htmlOpt)
+	// Assign a layout if there is one.
+	if len(opt.Layout) > 0 {
+		r.addLayoutFuncs(name, binding)
+		name = opt.Layout
+	}
+
+	head := Head{
+		ContentType: r.opt.HTMLContentType + r.compiledCharset,
+		Status:      status,
+	}
+
+	h := HTML{
+		Head:      head,
+		Name:      name,
+		Templates: r.templates,
+	}
+
+	r.Render(w, h, binding)
 }
 
 // JSON marshals the given interface object and writes the JSON response.
@@ -303,74 +383,32 @@ func (r *Render) JSONP(w http.ResponseWriter, status int, callback string, v int
 	r.Render(w, j, v)
 }
 
-// Data writes out the raw bytes as binary data.
-func (r *Render) Data(w http.ResponseWriter, status int, v []byte) {
+// Text writes out a string as plain text.
+func (r *Render) Text(w http.ResponseWriter, status int, v string) {
 	head := Head{
-		ContentType: ContentBinary,
+		ContentType: ContentText + r.compiledCharset,
 		Status:      status,
 	}
 
-	d := Data{
+	t := Text{
 		Head: head,
 	}
 
-	r.Render(w, d, v)
+	r.Render(w, t, v)
 }
 
-// HTML builds up the response from the specified template and bindings.
-func (r *Render) HTML(w http.ResponseWriter, status int, name string, binding interface{}, htmlOpt ...HTMLOptions) {
-	// If we are in development mode, recompile the templates on every HTML request.
-	if r.opt.IsDevelopment {
-		r.compileTemplates()
-	}
-
-	opt := r.prepareHTMLOptions(htmlOpt)
-
-	// Assign a layout if there is one.
-	if len(opt.Layout) > 0 {
-		r.addYield(name, binding)
-		name = opt.Layout
-	}
-
+// XML marshals the given interface object and writes the XML response.
+func (r *Render) XML(w http.ResponseWriter, status int, v interface{}) {
 	head := Head{
-		ContentType: r.opt.HTMLContentType + r.compiledCharset,
+		ContentType: ContentXML + r.compiledCharset,
 		Status:      status,
 	}
 
-	h := HTML{
-		Head:      head,
-		Name:      name,
-		Templates: r.templates,
+	x := XML{
+		Head:   head,
+		Indent: r.opt.IndentXML,
+		Prefix: r.opt.PrefixXML,
 	}
 
-	r.Render(w, h, binding)
-}
-
-func (r *Render) execute(name string, binding interface{}) (*bytes.Buffer, error) {
-	buf := new(bytes.Buffer)
-	return buf, r.templates.ExecuteTemplate(buf, name, binding)
-}
-
-func (r *Render) addYield(name string, binding interface{}) {
-	funcs := template.FuncMap{
-		"yield": func() (template.HTML, error) {
-			buf, err := r.execute(name, binding)
-			// Return safe HTML here since we are rendering our own template.
-			return template.HTML(buf.String()), err
-		},
-		"current": func() (string, error) {
-			return name, nil
-		},
-	}
-	r.templates.Funcs(funcs)
-}
-
-func (r *Render) prepareHTMLOptions(htmlOpt []HTMLOptions) HTMLOptions {
-	if len(htmlOpt) > 0 {
-		return htmlOpt[0]
-	}
-
-	return HTMLOptions{
-		Layout: r.opt.Layout,
-	}
+	r.Render(w, x, v)
 }

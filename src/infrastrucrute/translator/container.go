@@ -29,6 +29,7 @@ type RawParticularData struct {
 }
 
 type ParticularItem struct {
+	Url          string
 	Order        int
 	Original     string
 	Time         time.Duration

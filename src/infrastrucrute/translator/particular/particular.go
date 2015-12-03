@@ -11,6 +11,7 @@ type IParticularBackend interface {
 
 type IParticularResponse interface {
 	GetMeanings() []IParticularMeaning
+	GetUrl() string
 }
 
 type Meaning struct {

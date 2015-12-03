@@ -57,11 +57,12 @@ type TranslateAdapter struct {
 	translateBackend []ITranslateBackend
 	translateParticular []particular.IParticularBackend
 //	middleware []translation_middleware.ITranslationMiddleware
+	landChan chan string
 
 }
 
 func NewTranslateAdapter(back []ITranslateBackend) *TranslateAdapter {
-	return &TranslateAdapter{client:initClient(), translateBackend:back}
+	return &TranslateAdapter{client:initClient(), translateBackend:back, landChan:make(chan string, 1)}
 }
 func (t *TranslateAdapter) AddParticular(p particular.IParticularBackend){
 	p.SetClient(t.client)
@@ -79,17 +80,21 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	responseChanParticular := make(chan *RawParticularData, len(langs))
 
 	go t.doRequestsTranslators(text, langs, responseChan)
+	go func(){
+		lang := <-t.landChan
+		t.doRequestsParticular(text, lang, langs, responseChanParticular)
+	}()
 	for resp := range responseChan {
 		log.Println(resp)
 		container.RawTranslations[resp.Name][resp.Lang] = resp.Translation
 		if "google" == resp.Name {
 			container.Source = resp.Source
+			t.landChan <- resp.Source
 		}
 		container.RawTransData = append(container.RawTransData, resp)
 	}
 	container.Translations = container.RawTranslations["google"]
 
-	go t.doRequestsParticular(text, container.Source, langs, responseChanParticular)
 	for resp := range responseChanParticular {
 		container.RawParticularData = append(container.RawParticularData, resp)
 	}
@@ -151,6 +156,7 @@ func (t *TranslateAdapter) doRequestsParticular(text, source string, languages [
 						t1 := time.Now()
 						resp := backend.TranslateOne(item.Original, raw.Source, raw.Lang)
 						item.Translations = resp.GetMeanings()
+						item.Url = resp.GetUrl()
 						item.Time = time.Since(t1) / time.Millisecond
 						c <- item
 					}(item, raw, backend, partChan)

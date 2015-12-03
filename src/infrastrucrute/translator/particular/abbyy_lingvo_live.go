@@ -18,10 +18,10 @@ const LG_PART_URL = "http://www.lingvolive.com/api/Translation/WordListPart/" //
 var langsMap = map[string]string{
 	"ru": "1049",
 	"en": "1033",
-//	"da": "1030",?
-//	"zh": "1028",?
-//	"nl": "1035",?
-//	"fi": "1043",?
+	//	"da": "1030",?
+	//	"zh": "1028",?
+	//	"nl": "1035",?
+	//	"fi": "1043",?
 	"de": "32775",
 	"fr": "1036",
 }
@@ -46,18 +46,19 @@ func (t *AbbyyLingvoLiveTranslator) TranslateOne(text string, language, to strin
 	if language != "ru" && to != "ru" {
 		return data
 	}
-	req, _ := http.NewRequest("GET", LG_URL+"?"+t.getQueryStringFull(text, language, to), nil)
-
+	reqUrl := LG_URL+"?"+t.getQueryStringFull(text, language, to)
+	req, _ := http.NewRequest("GET", reqUrl, nil)
+	data.Url = reqUrl
 	resp, err := t.client.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
 		log.Println(err)
 	}
 	reader := ioutil.NopCloser(resp.Body)
-		b , _ := ioutil.ReadAll(reader)
+	b, _ := ioutil.ReadAll(reader)
 	str := string(b)
 
-		log.Println(str)
+	// log.Println(str)
 	if err := json.NewDecoder(strings.NewReader(str)).Decode(&data); err != nil {
 		log.Println("error decode", err)
 	}
@@ -89,6 +90,7 @@ func (t *AbbyyLingvoLiveTranslator) getQueryStringPart(text, from, to string) st
 
 type LingvoLiveTranslatorResponseFull struct {
 	Lang                  string
+	Url                   string
 	GlossaryUnits         interface{} `json:"glossaryUnits"`
 	LanguagesReversed     bool        `json:"languagesReversed"`
 	SeeAlsoWordForms      []string    `json:"seeAlsoWordForms"`
@@ -111,6 +113,10 @@ type LingvoLiveTranslatorResponsePart struct {
 	} `json:"items"`
 }
 
+func (t *LingvoLiveTranslatorResponseFull) GetUrl() string {
+	return t.Url
+}
+
 func (t *LingvoLiveTranslatorResponseFull) GetMeanings() []IParticularMeaning {
 	meanings := []IParticularMeaning{}
 	for _, v := range t.Articles {
@@ -122,7 +128,7 @@ func (t *LingvoLiveTranslatorResponseFull) GetMeanings() []IParticularMeaning {
 			value := strings.TrimSpace(s.Text())
 			value = strings.Trim(value, ";")
 			value = strings.Trim(value, ",")
-			if len(value) > 0 && value[0] =='<' {
+			if len(value) > 0 && value[0] == '<' {
 				value = ""
 			}
 			if "" != value {

@@ -127,10 +127,17 @@ func (t *LingvoLiveTranslatorResponseFull) GetMeanings() []IParticularMeaning {
 		table.Find(".article-body-items").Each(func(i int, s *goquery.Selection) {
 
 			if s.Find(".paragraph-marker-top-level").Text() == "" {
-				return
+				if s.Find(".parts-of-speech").Text() != "" && len(s.Find(".article-text").Nodes) == 0 {
+					return
+				}
 			}
 
-			value := s.Find(".article-text-wrap").Text()
+			value := s.Find(".article-text-wrap .article-text").Text()
+			if value == "" {
+				// maybe comment
+				value = s.Find(".article-text-wrap .comment").Text()
+			}
+			value = strings.TrimLeft(value, "<-s, ->")
 			value = strings.TrimSpace(value)
 			if "" != value {
 				meaning.All = append(meaning.All, value)

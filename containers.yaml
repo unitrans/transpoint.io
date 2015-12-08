@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unitrans-image
+containers:
+- name: unitrans
+  image: eu.gcr.io/unitrans-1107/unitrans_image
+  ports:
+  - name: http
+    hostPort: 80
+    containerPort: 8088

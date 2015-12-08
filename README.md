@@ -47,4 +47,33 @@ gcloud compute --project sodium-platform-99915 instances create "packer-auto" --
 
 ```
 docker rmi $(docker images -qf "dangling=true")
+
+docker ps -a
+
+docker build -t unitrans_image .
+
+docker run --publish 6060:8088 --name unitrans_container --rm unitrans_image
+
+
+# GCloud
+docker tag unitrans_image eu.gcr.io/unitrans-1107/unitrans_image
+
+gcloud config set compute/zone europe-west1-c
+gcloud docker push eu.gcr.io/unitrans-1107/unitrans_image
+
+gcloud container clusters create guestbook --num-nodes 1 --machine-type g1-small 
+gcloud container clusters list
+gcloud container clusters describe guestbook
+
+#kubernetes
+kubectl create -f redis-service.yaml
+kubectl create -f redis-controller.yaml
+kubectl create -f service-controller.yaml
+kubectl create -f service-service.yaml
+
+
+kubectl get services
+kubectl describe services frontend
+
+kubectl run hello-go1 --image=eu.gcr.io/unitrans-1107/unitrans_image --port=8088
 ```

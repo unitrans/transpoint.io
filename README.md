@@ -41,3 +41,10 @@ gcloud compute --project sodium-platform-99915 instances create "packer-auto" --
 --tags "http-server" \
 --image "packer-trio" 
 ```
+
+
+## Docker
+
+```
+docker rmi $(docker images -qf "dangling=true")
+```

@@ -1,0 +1,13 @@
+unitrans:
+  build: .
+  volumes:
+    - "./:/go/src/github.com/urakozz/transpoint.io"
+  ports:
+    - "8080:8088"
+  links:
+    - redis
+  working_dir: /go/src/github.com/urakozz/transpoint.io
+  command: "go run main.go"
+
+redis:
+    image: redis

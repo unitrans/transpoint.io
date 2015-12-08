@@ -68,6 +68,7 @@ func main() {
 	//initProfiler()
 
 	log.Printf("Info: Starting application on port %s", port)
+	log.Printf("Info: app done")
 	log.Fatal(http.ListenAndServe(":" + port, nil))
 }
 

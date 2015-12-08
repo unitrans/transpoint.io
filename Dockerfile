@@ -3,6 +3,7 @@ FROM golang
 ADD . /go/src/github.com/urakozz/transpoint.io
 WORKDIR /go/src/github.com/urakozz/transpoint.io
 
+ENV HOME /root
 ENV GO15VENDOREXPERIMENT 1
 
 RUN go install

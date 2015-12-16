@@ -18,12 +18,23 @@ const LG_PART_URL = "http://www.lingvolive.com/api/Translation/WordListPart/" //
 var langsMap = map[string]string{
 	"ru": "1049",
 	"en": "1033",
-	//	"da": "1030",?
-	//	"zh": "1028",?
-	//	"nl": "1035",?
-	//	"fi": "1043",?
+	"da": "1030",
+	"zh": "1028", //Chineese
+	"nl": "1043",
+	"fi": "1035",
 	"de": "32775",
 	"fr": "1036",
+	"el": "1049", //Greek
+	"hu": "1038", //Hungarian
+	"it": "1040",
+	"la": "1042", //Latin
+	"no": "1044", //Norwegian
+	"pl": "1045", //Polish
+	"pt": "2070", //Portugal
+	"es": "1034", //Spanish
+	"tt": "1092", //Tatar
+	"tr": "1055", //Turkish
+	"uk": "1058", //Ukrainian
 }
 
 type AbbyyLingvoLiveTranslator struct {
@@ -138,6 +149,7 @@ func (t *LingvoLiveTranslatorResponseFull) GetMeanings() []IParticularMeaning {
 				value = s.Find(".article-text-wrap .comment").Text()
 			}
 			value = strings.TrimLeft(value, "<-s, ->")
+			value = strings.TrimLeft(value, ";")
 			value = strings.TrimSpace(value)
 			if "" != value {
 				meaning.All = append(meaning.All, value)

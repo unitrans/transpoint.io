@@ -51,26 +51,42 @@ func(r *GoogleTranslator) GetName() string{
 
 type GoogleResponse struct {
 	Lang string
-	Data struct {
+	Data *struct {
 		Translations []struct{
 			Text string `json:"translatedText"`
 			Source string  `json:"detectedSourceLanguage"`
 		} `json:"translations"`
 	} `json:"data"`
+	Error *struct{
+		Code int `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
 }
 
 func(r *GoogleResponse) GetText() string{
+	if r.Error != nil {
+		return ""
+	}
 	return r.Data.Translations[0].Text
 }
 
 func(r *GoogleResponse) GetSource() string{
+	if r.Error != nil {
+		return ""
+	}
 	return r.Data.Translations[0].Source
 }
 
 func(r *GoogleResponse) GetLang() string{
+	if r.Error != nil {
+		return ""
+	}
 	return r.Lang
 }
 
 func(r *GoogleResponse) GetName() string{
 	return "google"
+}
+func(r *GoogleResponse) IsOk() bool {
+	return r.Error == nil
 }

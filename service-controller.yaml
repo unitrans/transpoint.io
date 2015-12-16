@@ -6,7 +6,7 @@ metadata:
     app: guestbook
     tier: frontend
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     app: guestbook
     tier: frontend
@@ -21,7 +21,7 @@ spec:
             image: eu.gcr.io/unitrans-1107/unitrans_image
             resources:
               requests:
-                cpu: 100m
+                cpu: 20m
                 memory: 100Mi
             env:
               - name: REDIS_ADDR

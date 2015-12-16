@@ -75,5 +75,10 @@ kubectl create -f service-service.yaml
 kubectl get services
 kubectl describe services frontend
 
-kubectl run hello-go1 --image=eu.gcr.io/unitrans-1107/unitrans_image --port=8088
+#docker
+kubectl get pods -o wide
+gcloud compute ssh gke-guestbook-a2f9068e-node-age1
+
+sudo docker ps
+sudo docker logs -f 54e9df6efa7d
 ```

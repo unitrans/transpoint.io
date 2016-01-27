@@ -103,7 +103,7 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 }
 
 func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTransData){
-	emFix := regexp.MustCompile(`\_\s?\$\s?(\d+)\_+`)
+
 	wg := &sync.WaitGroup{}
 	for _, v := range languages {
 		for _, back := range t.translateBackend{
@@ -117,7 +117,7 @@ func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string
 					Source:resp.GetSource(),
 					Lang:resp.GetLang(),
 					Name:backend.GetName(),
-					Translation:emFix.ReplaceAllString(resp.GetText(), `_\$$1_`),
+					Translation:resp.GetText(),
 					Time: time.Since(t) / time.Millisecond,
 				}
 				c <- raw

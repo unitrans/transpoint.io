@@ -6,6 +6,7 @@ import (
 	"github.com/urakozz/go-emoji"
 	"strconv"
 	"regexp"
+	"strings"
 )
 
 type EmojiProcessor struct {
@@ -13,7 +14,7 @@ type EmojiProcessor struct {
 }
 
 var parser = emoji.NewEmojiParser()
-var reviver = regexp.MustCompile(`\_\$\d+\_`)
+var reviver = regexp.MustCompile(`\_\s?\$\s?\d+\_`)
 
 func NewEmojiProcessor() *EmojiProcessor{
 	return &EmojiProcessor{make(map[string]string)}
@@ -31,6 +32,7 @@ func (e *EmojiProcessor) Process(text string) string {
 
 func (e *EmojiProcessor) Restore(text string) string {
 	return reviver.ReplaceAllStringFunc(text, func(s string) string {
+		s = strings.Replace(s, " ", "", -1)
 		return e.container[s]
 	})
 }

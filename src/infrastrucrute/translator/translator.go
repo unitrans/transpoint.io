@@ -86,12 +86,12 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	}()
 	for resp := range responseChan {
 		log.Println(resp)
-		container.RawTranslations[resp.Name][resp.Lang] = resp.Translation
 		if "google" == resp.Name {
 			container.Source = resp.Source
 			t.landChan <- resp.Source
 		}
 		resp.Translation = processor.Restore(resp.Translation)
+		container.RawTranslations[resp.Name][resp.Lang] = resp.Translation
 		container.RawTransData = append(container.RawTransData, resp)
 	}
 	container.Translations = container.RawTranslations["google"]

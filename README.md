@@ -71,7 +71,7 @@ kubectl create -f redis-controller.yaml
 kubectl create -f service-controller.yaml
 kubectl create -f service-service.yaml
 
-
+kubectl get rc
 kubectl get services
 kubectl describe services frontend
 

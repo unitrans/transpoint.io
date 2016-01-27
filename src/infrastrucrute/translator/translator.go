@@ -73,8 +73,8 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	container.Original = text
 
 	langs = array_uniq(langs)
-//	processor := NewEmojiProcessor()
-//	text = processor.Process(text)
+	processor := NewEmojiProcessor()
+	text = processor.Process(text)
 
 	responseChan := make(chan *RawTransData, len(langs))
 	responseChanParticular := make(chan *RawParticularData, len(langs))
@@ -91,6 +91,7 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 			container.Source = resp.Source
 			t.landChan <- resp.Source
 		}
+		resp.Translation = processor.Restore(resp.Translation)
 		container.RawTransData = append(container.RawTransData, resp)
 	}
 	container.Translations = container.RawTranslations["google"]

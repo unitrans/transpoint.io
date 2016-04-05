@@ -77,7 +77,7 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	text = processor.Process(text)
 
 	responseChan := make(chan *RawTransData, len(langs))
-	responseChanParticular := make(chan *RawParticularData, len(langs))
+	//responseChanParticular := make(chan *RawParticularData, len(langs))
 
 	go t.doRequestsTranslators(text, langs, responseChan)
 //	go func(){
@@ -96,9 +96,9 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	}
 	container.Translations = container.RawTranslations["google"]
 
-	for resp := range responseChanParticular {
-		container.RawParticularData = append(container.RawParticularData, resp)
-	}
+//	for resp := range responseChanParticular {
+//		container.RawParticularData = append(container.RawParticularData, resp)
+//	}
 	return container
 }
 

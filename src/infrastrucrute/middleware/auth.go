@@ -62,7 +62,13 @@ func (rest *RESTGate) ServeHTTP(w http.ResponseWriter, req *http.Request, next h
 
 	//Check key in Header
 	key := req.Header.Get(rest.headerKeyLabel)
+	if key == "" {
+		key = req.URL.Query().Get(rest.headerKeyLabel)
+	}
 	secret := req.Header.Get(rest.headerSecretLabel)
+	if secret == "" {
+		secret = req.URL.Query().Get(rest.headerSecretLabel)
+	}
 
 	if key == "" {
 		//Authentication Information not included in request

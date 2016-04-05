@@ -45,6 +45,7 @@ func ApiRouter(userRepository *repository.UserRepository, tRep *repository.Trans
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", wrap(Default)).Methods("GET")
+	r.HandleFunc("/translations", wrap(ApiTranslate)).Methods("GET")
 	r.HandleFunc("/translations", wrap(Create)).Methods("POST")
 	r.HandleFunc("/translations/{id:[a-z0-9-]+}", wrap(Save)).Methods("POST")
 	r.HandleFunc("/translations/{id}", wrap(Get)).Methods("GET")
@@ -101,6 +102,11 @@ func Default(w http.ResponseWriter, r *http.Request) (interface{}, int) {
 	methodMap := make(map[string]string)
 	methodMap["translation_map"] = fmt.Sprintf("/%s/%s", ApiVersion, "translations")
 	return methodMap, http.StatusOK
+}
+
+func ApiTranslate(w http.ResponseWriter, r *http.Request) (interface{}, int) {
+	container := translator.Translate(r.URL.Query().Get("text"), r.URL.Query()["lang"])
+	return container, http.StatusOK
 }
 
 func Create(w http.ResponseWriter, r *http.Request) (interface{}, int) {

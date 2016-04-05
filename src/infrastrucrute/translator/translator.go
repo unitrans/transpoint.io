@@ -80,10 +80,10 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	responseChanParticular := make(chan *RawParticularData, len(langs))
 
 	go t.doRequestsTranslators(text, langs, responseChan)
-	go func(){
-		lang := <-t.landChan
-		t.doRequestsParticular(text, lang, langs, responseChanParticular)
-	}()
+//	go func(){
+//		lang := <-t.landChan
+//		t.doRequestsParticular(text, lang, langs, responseChanParticular)
+//	}()
 	for resp := range responseChan {
 		log.Println(resp)
 		if "google" == resp.Name {

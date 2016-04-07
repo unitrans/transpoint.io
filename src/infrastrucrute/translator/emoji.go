@@ -24,9 +24,9 @@ func (e *EmojiProcessor) Process(text string) string {
 	i := -1
 	return parser.ReplaceAllStringFunc(text, func(s string) string {
 		i++
-		key := " _$"+strconv.Itoa(i)+"_"
+		key := "_$"+strconv.Itoa(i)+"_"
 		e.container[key] = s
-		return key
+		return " " + key
 	})
 }
 

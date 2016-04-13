@@ -65,11 +65,12 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 			container.RawTransData[lang]["uni"].Translation = details["yandex"].Translation
 			container.RawTransData[lang]["uni"].Source = details["yandex"].Source
 			container.RawTransData[lang]["uni"].Lang = details["yandex"].Lang
-			container.RawTransData[lang]["uni"].Name = "uni"
 		}
 	}
 
 	for lang, details := range container.RawTransData{
+
+		container.RawTransData[lang]["uni"].Name = "unitrans"
 		container.Translations[lang] = details["uni"].Translation
 		container.Source = details["uni"].Source
 	}

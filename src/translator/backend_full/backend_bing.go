@@ -17,10 +17,10 @@ type BingTranslator struct {
 }
 
 func NewBingTranslator(client *http.Client, key string) IBackendFull {
-	return &BingTranslator{key: key}
+	return &BingTranslator{client:client,key: key}
 }
 
-func (t *BingTranslator) TranslateOne(text string, language string) (IBackendFullResponse){
+func (t *BingTranslator) TranslateFull(text string, language string) (IBackendFullResponse){
 	data := &BingResponse{}
 	data.Lang = language
 	req, _ := http.NewRequest("GET", BG_URL+"?"+ t.getQueryString(text, language), nil)

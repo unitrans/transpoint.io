@@ -21,7 +21,7 @@ import (
 
 	"github.com/urakozz/transpoint.io/src/infrastrucrute/middleware"
 	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
-	t "github.com/urakozz/transpoint.io/src/infrastrucrute/translator"
+	t "github.com/urakozz/transpoint.io/src/translator"
 )
 
 
@@ -164,7 +164,7 @@ func SmartSave(request *RequestObject, id string) (bag repository.TranslationBag
 
 	meta := make(map[string]interface{})
 	container := translator.Translate(request.Text, langs)
-	meta["raw"] = container.RawTranslations
+	meta["raw"] = container.RawTransData
 
 
 	transRepository.Save(id, container.Source, request.Text, container.Translations, meta)

@@ -9,6 +9,6 @@ type IBackendFullResponse interface {
 }
 
 type IBackendFull interface {
-	TranslateFull(text string, language string) (data IBackendFull)
+	TranslateFull(text string, language string) (data IBackendFullResponse)
 	GetName() string
 }

@@ -11,12 +11,14 @@ import (
 	"github.com/davecheney/profile"
 	"gopkg.in/redis.v3"
 
-	t "github.com/urakozz/transpoint.io/src/infrastrucrute/translator"
+	t "github.com/urakozz/transpoint.io/src/translator"
 	"github.com/urakozz/transpoint.io/src/scenario"
 
 	"github.com/urakozz/transpoint.io/src/infrastrucrute/storage"
 	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
-	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
+	//"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
+	"github.com/urakozz/transpoint.io/src/translator/backend_full"
+	"github.com/urakozz/transpoint.io/src/infrastrucrute/httpclient"
 )
 
 
@@ -32,12 +34,12 @@ func init() {
 	godotenv.Load()
 	redisClient = storage.RedisClient(os.Getenv("REDIS_ADDR"), os.Getenv("REDIS_PASS"))
 	translator = t.NewTranslateAdapter(
-		[]t.ITranslateBackend{
-			t.NewGoogleTranslator(os.Getenv("G_TR_KEY")),
-			t.NewYandexTranslator(os.Getenv("Y_TR_KEY")),
-//			t.NewBingTranslator(os.Getenv("B_TR_KEY")),
+		[]backend_full.IBackendFull{
+			backend_full.NewGoogleTranslator(httpclient.GetHttpClient(), os.Getenv("G_TR_KEY")),
+			backend_full.NewYandexTranslator(httpclient.GetHttpClient(), os.Getenv("Y_TR_KEY")),
+//			backend_full.NewBingTranslator(os.Getenv("B_TR_KEY")),
 		})
-	translator.AddParticular(&particular.AbbyyLingvoLiveTranslator{})
+	//translator.AddParticular(&particular.AbbyyLingvoLiveTranslator{})
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))
 	}

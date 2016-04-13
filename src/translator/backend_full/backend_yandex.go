@@ -20,11 +20,11 @@ type YandexTranslator struct {
 }
 
 func NewYandexTranslator(client *http.Client, key string) IBackendFull{
-	return &YandexTranslator{key:key}
+	return &YandexTranslator{client:client,key:key}
 }
 
 
-func (t *YandexTranslator) TranslateOne(text string, language string) (IBackendFullResponse){
+func (t *YandexTranslator) TranslateFull(text string, language string) (IBackendFullResponse){
 	data := &YandexResponse{}
 
 	req, _ := http.NewRequest("POST", YT_URL, bytes.NewBufferString(t.getQueryString(text, language)))

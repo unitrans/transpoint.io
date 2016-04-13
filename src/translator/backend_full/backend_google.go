@@ -18,11 +18,11 @@ type GoogleTranslator struct {
 }
 
 func NewGoogleTranslator(client *http.Client, key string) IBackendFull {
-	return &GoogleTranslator{key:key}
+	return &GoogleTranslator{client:client,key:key}
 }
 
 
-func (t *GoogleTranslator) TranslateOne(text string, language string) (IBackendFullResponse){
+func (t *GoogleTranslator) TranslateFull(text string, language string) (IBackendFullResponse){
 	data := &GoogleResponse{}
 	data.Lang = language
 	req, _ := http.NewRequest("GET", GT_URL+"?"+ t.getQueryString(text, language), nil)

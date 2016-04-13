@@ -41,7 +41,7 @@ type AbbyyLingvoLiveTranslator struct {
 	client *http.Client
 }
 
-func NewAbbyyLingvoLiveTranslator(c *http.Client) *IBackendParticular{
+func NewAbbyyLingvoLiveTranslator(c *http.Client) IBackendParticular{
 	return &AbbyyLingvoLiveTranslator{client:c}
 }
 

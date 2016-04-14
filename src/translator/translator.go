@@ -7,6 +7,7 @@ import (
 	"github.com/urakozz/transpoint.io/src/translator/backend_full"
 	"sync"
 	"time"
+	"github.com/urakozz/transpoint.io/src/components"
 )
 
 type Translator interface {
@@ -17,12 +18,13 @@ type Translator interface {
 type TranslateAdapter struct {
 	translateBackend []backend_full.IBackendFull
 	translateParticular []backend_particular.IBackendParticular
+	markov components.IChain
 	landChan chan string
 
 }
 
-func NewTranslateAdapter(back []backend_full.IBackendFull) *TranslateAdapter {
-	return &TranslateAdapter{translateBackend:back, landChan:make(chan string, 1)}
+func NewTranslateAdapter(back []backend_full.IBackendFull, markov components.IChain) *TranslateAdapter {
+	return &TranslateAdapter{translateBackend:back, landChan:make(chan string, 1), markov:markov}
 }
 
 func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationContainer {
@@ -34,6 +36,9 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	}
 	container.Original = text
 
+	//fill markov model
+	t.markov.Add(text)
+
 	responseChan := make(chan *RawTranslationData, len(langs))
 
 	go t.doRequestsTranslators(text, langs, responseChan)
@@ -42,6 +47,7 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 		if _, ok := container.RawTransData[resp.Lang]; !ok {
 			container.RawTransData[resp.Lang] = make(map[string]*RawTranslationData)
 		}
+		resp.Score = t.markov.Occurrences(resp.Translation)
 		container.RawTransData[resp.Lang][resp.Name] = resp
 	}
 
@@ -65,12 +71,22 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 			container.RawTransData[lang]["uni"].Translation = details["yandex"].Translation
 			container.RawTransData[lang]["uni"].Source = details["yandex"].Source
 			container.RawTransData[lang]["uni"].Lang = details["yandex"].Lang
+		} else if details["yandex"].Score > details["google"].Score {
+			container.RawTransData[lang]["uni"].Translation = details["yandex"].Translation
 		}
 	}
+	//// fill markov model if confident source
+	//for _, details := range container.RawTransData{
+	//	if details["yandex"].Source == details["google"].Source {
+	//		t.markov.Add()
+	//	}
+	//}
 
+	//postprocessing
 	for lang, details := range container.RawTransData{
-
 		container.RawTransData[lang]["uni"].Name = "unitrans"
+		container.RawTransData[lang]["uni"].Score = t.markov.Occurrences(details["uni"].Translation)
+
 		container.Translations[lang] = details["uni"].Translation
 		container.Source = details["uni"].Source
 	}

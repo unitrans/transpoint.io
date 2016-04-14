@@ -19,6 +19,7 @@ import (
 	//"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
 	"github.com/urakozz/transpoint.io/src/translator/backend_full"
 	"github.com/urakozz/transpoint.io/src/infrastrucrute/httpclient"
+	"github.com/urakozz/transpoint.io/src/components"
 )
 
 
@@ -38,7 +39,9 @@ func init() {
 			backend_full.NewGoogleTranslator(httpclient.GetHttpClient(), os.Getenv("G_TR_KEY")),
 			backend_full.NewYandexTranslator(httpclient.GetHttpClient(), os.Getenv("Y_TR_KEY")),
 //			backend_full.NewBingTranslator(os.Getenv("B_TR_KEY")),
-		})
+		},
+		components.NewChain(2),
+	)
 	//translator.AddParticular(&particular.AbbyyLingvoLiveTranslator{})
 	if "" == os.Getenv("APP_SECRET") {
 		os.Setenv("APP_SECRET", string(securecookie.GenerateRandomKey(32)))

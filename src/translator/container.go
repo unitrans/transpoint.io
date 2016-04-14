@@ -3,7 +3,7 @@
 package translator
 
 import (
-	"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
+	"github.com/urakozz/transpoint.io/src/translator/backend_particular"
 	"time"
 )
 
@@ -17,6 +17,7 @@ type RawTranslationData struct {
 	Name        string
 	Translation string
 	Time        time.Duration
+	Score       float64
 }
 
 type RawParticularData struct {
@@ -33,7 +34,7 @@ type ParticularItem struct {
 	Order        int
 	Original     string
 	Time         time.Duration
-	Translations []particular.IParticularMeaning
+	Translations []backend_particular.IParticularMeaning
 }
 
 // TranslationContainer struct

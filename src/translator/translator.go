@@ -37,7 +37,9 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	container.Original = text
 
 	//fill markov model
-	t.markov.Add(text)
+	if len(text) > 100{
+		t.markov.Add(text)
+	}
 
 	responseChan := make(chan *RawTranslationData, len(langs))
 

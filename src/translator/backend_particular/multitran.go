@@ -7,13 +7,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"gopkg.in/xmlpath.v2"
+	"bytes"
 )
 
-//import "gopkg.in/xmlpath.v2"
 
 const MT_URL = "http://www.multitran.ru/c/m.exe"
 
-var langsMap = map[string]string{"en": "1",
+var langsMapMt = map[string]string{"en": "1",
 	"de":  "3",
 	"fr":  "4",
 	"es":  "5",
@@ -37,8 +38,8 @@ func NewMultitran(c *http.Client) IBackendParticular {
 
 func (t *Multitran) TranslateWord(text string, language, to string) IBackendParticularResponse {
 
-	_, ok1 := langsMap[language]
-	_, ok2 := langsMap[to]
+	_, ok1 := langsMapMt[language]
+	_, ok2 := langsMapMt[to]
 	if !ok1 || !ok2 {
 		return &MultitranResponse{}
 	}
@@ -54,7 +55,7 @@ func (t *Multitran) TranslateWord(text string, language, to string) IBackendPart
 	data := &MultitranResponse{}
 	data.Lang = language
 	data.Url = reqUrl
-	data.BodyHtml = ioutil.ReadAll(resp.Body)
+	data.HtmlBytes, _ = ioutil.ReadAll(resp.Body)
 
 	return data
 }
@@ -65,15 +66,15 @@ func (t *Multitran) GetName() string {
 
 func (t *Multitran) getQueryStringFull(text, from, to string) string {
 	form := url.Values{}
-	form.Add("l1", langsMap[from])
-	form.Add("l2", langsMap[to])
+	form.Add("l1", langsMapMt[from])
+	form.Add("l2", langsMapMt[to])
 	form.Add("s", text)
 	//form.Add("CL", "1")
 	return form.Encode()
 }
 
 type MultitranResponse struct {
-	BodyHtml string
+	HtmlBytes []byte
 	Lang     string
 	Url      string
 }
@@ -86,6 +87,9 @@ func (t *MultitranResponse) GetMeanings() []IParticularMeaning {
 	meanings := []IParticularMeaning{}
 	//for _, v := range t.Articles {
 		meaning := &Meaning{}
+	n, _ := xmlpath.ParseHTML(bytes.NewReader(t.HtmlBytes))
+	path := xmlpath.MustCompile(`//form[@id="translation"]/../table[2]/tr`)
+	path.Iter(n)
 		//trs = html.xpath('//form[@id="translation"]/../table[2]/tr')
 		//for tr in trs:
 		//  tds = tr.xpath('td')

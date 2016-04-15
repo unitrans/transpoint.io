@@ -2,12 +2,12 @@
 // Proprietary license.
 package processing
 
-import "unicode"
+//import "unicode"
 
 type ProcessingSegments struct {
 
 }
 
 func (p *ProcessingSegments) some(){
-	unicode.IsGraphic("s")
+	//unicode.IsGraphic([]rune("s"))
 }

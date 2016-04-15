@@ -56,6 +56,10 @@
 			"Rev": "b174c4f35f9f3805e960be6286d888bc79534755"
 		},
 		{
+			"ImportPath": "github.com/goji/param",
+			"Rev": "da86c81e3e3c23b1948bc7a003d381250a032aa7"
+		},
+		{
 			"ImportPath": "github.com/goods/httpbuf",
 			"Rev": "5709e9bb814c932e48b6737e1cf214a6522453a2"
 		},
@@ -137,6 +141,10 @@
 		},
 		{
 			"ImportPath": "golang.org/x/text/encoding",
+			"Rev": "96ae61a846852762a2c301852c45dafe124bf175"
+		},
+		{
+			"ImportPath": "golang.org/x/text/language",
 			"Rev": "96ae61a846852762a2c301852c45dafe124bf175"
 		},
 		{

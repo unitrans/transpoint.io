@@ -59,7 +59,7 @@ func main() {
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
         // $ mkdir -p templates && echo "<h1>Hello {{.}}.</h1>" > templates/example.tmpl
-        r.HTML(w, http.StatusOK, "example", nil)
+        r.HTML(w, http.StatusOK, "example", "World")
     })
 
     http.ListenAndServe("127.0.0.1:3000", mux)
@@ -98,6 +98,7 @@ r := render.New(render.Options{
     UnEscapeHTML: true, // Replace ensure '&<>' are output correctly (JSON only).
     StreamingJSON: true, // Streams the JSON response via json.Encoder.
     RequireBlocks: true, // Return an error if a template is missing a block used in a layout.
+    DisableHTTPErrorRendering: true, // Disables automatic rendering of http.StatusInternalServerError when an error occurs.
 })
 // ...
 ~~~
@@ -128,6 +129,7 @@ r := render.New(render.Options{
     UnEscapeHTML: false,
     StreamingJSON: false,
     RequireBlocks: false,
+    DisableHTTPErrorRendering: false,
 })
 ~~~
 
@@ -268,7 +270,7 @@ func main() {
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
         // $ mkdir -p templates && echo "<h1>Hello {{.}}.</h1>" > templates/example.tmpl
-        r.HTML(w, http.StatusOK, "example", nil)
+        r.HTML(w, http.StatusOK, "example", "World")
     })
 
     http.ListenAndServe("127.0.0.1:3000", mux)
@@ -324,10 +326,30 @@ func main() {
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
         // $ mkdir -p templates && echo "<h1>Hello {{.}}.</h1>" > templates/example.tmpl
-        r.HTML(w, http.StatusOK, "example", nil)
+        r.HTML(w, http.StatusOK, "example", "World")
     })
 
     http.ListenAndServe("127.0.0.1:3000", mux)
+}
+~~~
+
+### Error Handling
+
+The rendering functions return any errors from the rendering engine.
+By default, they will also write the error to the HTTP response and set the status code to 500. You can disable
+this behavior so that you can handle errors yourself by setting
+`Options.DisableHTTPErrorRendering: true`.
+
+~~~go
+r := render.New(render.Options{
+  DisableHTTPErrorRendering: true,
+})
+
+//...
+
+err := r.HTML(w, http.StatusOK, "example", "World")
+if err != nil{
+  http.Redirect(w, r, "/my-custom-500", http.StatusFound)
 }
 ~~~
 
@@ -442,7 +464,7 @@ func main() {
 }
 ~~~
 
-### [Traffic](https://github.com/pilu/traffic/)
+### [Traffic](https://github.com/pilu/traffic)
 ~~~ go
 // main.go
 package main
@@ -465,30 +487,5 @@ func main() {
     })
 
     router.Run()
-}
-~~~
-
-### [Web.go](https://github.com/hoisie/web)
-~~~ go
-// main.go
-package main
-
-import (
-    "net/http"
-
-    "github.com/hoisie/web"
-    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
-)
-
-func main() {
-    r := render.New(render.Options{
-        IndentJSON: true,
-    })
-
-    web.Get("/(.*)", func(ctx *web.Context, val string) {
-        r.JSON(ctx, http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
-    })
-
-    web.Run(":3000")
 }
 ~~~

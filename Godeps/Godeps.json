@@ -1,9 +1,6 @@
 {
 	"ImportPath": "github.com/urakozz/transpoint.io",
 	"GoVersion": "go1.6.1",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/OneOfOne/xxhash",
@@ -24,18 +21,9 @@
 			"Rev": "2af9d0034afcd83101abb1945f2a65ddbd563719"
 		},
 		{
-			"ImportPath": "github.com/codegangsta/inject",
-			"Comment": "v1.0-rc1-10-g33e0aa1",
-			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
-		},
-		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1-70-gc7477ad",
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
-		},
-		{
-			"ImportPath": "github.com/davecgh/go-spew/spew",
-			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
 		{
 			"ImportPath": "github.com/davecheney/profile",
@@ -49,15 +37,6 @@
 		{
 			"ImportPath": "github.com/facebookgo/httpcontrol",
 			"Rev": "ccde4420e1fee9af5da365cb76075b95683f39a6"
-		},
-		{
-			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v1.0-183-gb174c4f",
-			"Rev": "b174c4f35f9f3805e960be6286d888bc79534755"
-		},
-		{
-			"ImportPath": "github.com/goji/param",
-			"Rev": "da86c81e3e3c23b1948bc7a003d381250a032aa7"
 		},
 		{
 			"ImportPath": "github.com/goods/httpbuf",
@@ -85,29 +64,13 @@
 			"Rev": "4ed13390c0acd2ff4e371e64d8b97c8954138243"
 		},
 		{
-			"ImportPath": "github.com/justinas/alice",
-			"Rev": "671ef6b31288a51b5517ba2f1349e781b91a4da3"
-		},
-		{
 			"ImportPath": "github.com/justinas/nosurf",
-			"Comment": "0.1-50-g45adcfc",
-			"Rev": "45adcfcaf70610a5934db447ffe0ea9d13462c9e"
-		},
-		{
-			"ImportPath": "github.com/martini-contrib/render",
-			"Rev": "ec18f8345a1181146728238980606fb1d6f40e8c"
-		},
-		{
-			"ImportPath": "github.com/oxtoacart/bpool",
-			"Rev": "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
+			"Comment": "0.1-58-g15aad14",
+			"Rev": "15aad14338c4d52da7213594578e93684fe5518c"
 		},
 		{
 			"ImportPath": "github.com/pjebs/jsonerror",
 			"Rev": "236f3c18307ad38e59fc3f85e7bde1bef6233782"
-		},
-		{
-			"ImportPath": "github.com/pmezard/go-difflib/difflib",
-			"Rev": "792786c7400a136282c1664665ae0a8db921c6c2"
 		},
 		{
 			"ImportPath": "github.com/rs/cors",
@@ -118,51 +81,25 @@
 			"Rev": "08f0718b61e95ddba0ade3346725fe0e4bf28ca6"
 		},
 		{
-			"ImportPath": "github.com/stretchr/testify/assert",
-			"Comment": "v1.1.3",
-			"Rev": "f390dcf405f7b83c997eac1b06768bb9f44dec18"
-		},
-		{
-			"ImportPath": "github.com/urakozz/go-emoji",
-			"Rev": "103156b407a69b9069485ff5086a38f46862680a"
-		},
-		{
 			"ImportPath": "github.com/urakozz/go-json-rest-middleware-jwt",
 			"Rev": "5b9740dd7d83dd40c77ba0d4e771e0185e66d1ac"
 		},
 		{
-			"ImportPath": "github.com/zenazn/goji",
-			"Comment": "v0.9.0-43-g1925ec6",
-			"Rev": "1925ec6302925f4760d7a11cc17036f44ec98d5b"
-		},
-		{
 			"ImportPath": "golang.org/x/net/html",
-			"Rev": "d9558e5c97f85372afee28cf2b6059d7d3818919"
-		},
-		{
-			"ImportPath": "golang.org/x/text/encoding",
-			"Rev": "96ae61a846852762a2c301852c45dafe124bf175"
-		},
-		{
-			"ImportPath": "golang.org/x/text/language",
-			"Rev": "96ae61a846852762a2c301852c45dafe124bf175"
-		},
-		{
-			"ImportPath": "golang.org/x/text/transform",
-			"Rev": "96ae61a846852762a2c301852c45dafe124bf175"
+			"Rev": "3e5cd1ed149001198e582f9d3f5bfd564cde2896"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
-			"Rev": "bda20d5067a03094fc6762f7ead53027afac5f28"
+			"Rev": "f14ad9c78b155f69b480cfa41cb655259baac260"
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",
-			"Comment": "v3.2.13",
-			"Rev": "96fcac6a430e74927b638b73f373ad4d99de005b"
+			"Comment": "v3.2.27",
+			"Rev": "dd1ac33826064181d7abaa20d976eab31ec12b58"
 		},
 		{
 			"ImportPath": "gopkg.in/unrolled/render.v1",
-			"Rev": "d7c3df429697d42cc63332fa9ab88fef7a0fa6f7"
+			"Rev": "40a2dfa24398d37b4a14938442a0f4fe4307b929"
 		},
 		{
 			"ImportPath": "gopkg.in/xmlpath.v2",

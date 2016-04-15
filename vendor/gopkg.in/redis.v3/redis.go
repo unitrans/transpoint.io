@@ -16,20 +16,15 @@ func (c *baseClient) String() string {
 	return fmt.Sprintf("Redis<%s db:%d>", c.opt.Addr, c.opt.DB)
 }
 
-func (c *baseClient) conn() (*conn, error) {
+func (c *baseClient) conn() (*conn, bool, error) {
 	return c.connPool.Get()
 }
 
-func (c *baseClient) putConn(cn *conn, ei error) {
-	var err error
-	if cn.rd.Buffered() > 0 {
-		err = c.connPool.Remove(cn)
-	} else if ei == nil {
-		err = c.connPool.Put(cn)
-	} else if _, ok := ei.(redisError); ok {
-		err = c.connPool.Put(cn)
+func (c *baseClient) putConn(cn *conn, err error) {
+	if isBadConn(cn, err) {
+		err = c.connPool.Remove(cn, err)
 	} else {
-		err = c.connPool.Remove(cn)
+		err = c.connPool.Put(cn)
 	}
 	if err != nil {
 		log.Printf("redis: putConn failed: %s", err)
@@ -42,7 +37,7 @@ func (c *baseClient) process(cmd Cmder) {
 			cmd.reset()
 		}
 
-		cn, err := c.conn()
+		cn, _, err := c.conn()
 		if err != nil {
 			cmd.setErr(err)
 			return
@@ -125,7 +120,7 @@ type Options struct {
 	PoolSize int
 	// Specifies amount of time client waits for connection if all
 	// connections are busy before returning an error.
-	// Default is 5 seconds.
+	// Default is 1 seconds.
 	PoolTimeout time.Duration
 	// Specifies amount of time after which client closes idle
 	// connections. Should be less than server's timeout.

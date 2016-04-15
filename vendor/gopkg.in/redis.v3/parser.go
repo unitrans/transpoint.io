@@ -231,7 +231,14 @@ func readLine(cn *conn) ([]byte, error) {
 	if isPrefix {
 		return line, errReaderTooSmall
 	}
+	if isNilReply(line) {
+		return nil, Nil
+	}
 	return line, nil
+}
+
+func isNilReply(b []byte) bool {
+	return len(b) == 3 && (b[0] == '$' || b[0] == '*') && b[1] == '-' && b[2] == '1'
 }
 
 func readN(cn *conn, n int) ([]byte, error) {
@@ -249,17 +256,6 @@ func readN(cn *conn, n int) ([]byte, error) {
 
 func parseErrorReply(cn *conn, line []byte) error {
 	return errorf(string(line[1:]))
-}
-
-func isNilReply(b []byte) bool {
-	return len(b) == 3 && b[1] == '-' && b[2] == '1'
-}
-
-func parseNilReply(cn *conn, line []byte) error {
-	if isNilReply(line) {
-		return Nil
-	}
-	return fmt.Errorf("redis: can't parse nil reply: %.100", line)
 }
 
 func parseStatusReply(cn *conn, line []byte) ([]byte, error) {
@@ -282,8 +278,6 @@ func readIntReply(cn *conn) (int64, error) {
 	switch line[0] {
 	case errorReply:
 		return 0, parseErrorReply(cn, line)
-	case stringReply:
-		return 0, parseNilReply(cn, line)
 	case intReply:
 		return parseIntReply(cn, line)
 	default:
@@ -629,65 +623,69 @@ func clusterSlotInfoSliceParser(cn *conn, n int64) (interface{}, error) {
 	return infos, nil
 }
 
-func geoLocationParser(cn *conn, n int64) (interface{}, error) {
-	loc := &GeoLocation{}
+func newGeoLocationParser(q *GeoRadiusQuery) multiBulkParser {
+	return func(cn *conn, n int64) (interface{}, error) {
+		var loc GeoLocation
 
-	var err error
-	loc.Name, err = readStringReply(cn)
-	if err != nil {
-		return nil, err
-	}
-	if n >= 2 {
-		loc.Distance, err = readFloatReply(cn)
+		var err error
+		loc.Name, err = readStringReply(cn)
 		if err != nil {
 			return nil, err
 		}
-	}
-	if n >= 3 {
-		loc.GeoHash, err = readIntReply(cn)
-		if err != nil {
-			return nil, err
+		if q.WithDist {
+			loc.Dist, err = readFloatReply(cn)
+			if err != nil {
+				return nil, err
+			}
 		}
-	}
-	if n >= 4 {
-		n, err := readArrayHeader(cn)
-		if err != nil {
-			return nil, err
+		if q.WithGeoHash {
+			loc.GeoHash, err = readIntReply(cn)
+			if err != nil {
+				return nil, err
+			}
 		}
-		if n != 2 {
-			return nil, fmt.Errorf("got %d coordinates, expected 2", n)
+		if q.WithCoord {
+			n, err := readArrayHeader(cn)
+			if err != nil {
+				return nil, err
+			}
+			if n != 2 {
+				return nil, fmt.Errorf("got %d coordinates, expected 2", n)
+			}
+
+			loc.Longitude, err = readFloatReply(cn)
+			if err != nil {
+				return nil, err
+			}
+			loc.Latitude, err = readFloatReply(cn)
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		loc.Longitude, err = readFloatReply(cn)
-		if err != nil {
-			return nil, err
-		}
-		loc.Latitude, err = readFloatReply(cn)
-		if err != nil {
-			return nil, err
-		}
+		return &loc, nil
 	}
-
-	return loc, nil
 }
 
-func geoLocationSliceParser(cn *conn, n int64) (interface{}, error) {
-	locs := make([]GeoLocation, 0, n)
-	for i := int64(0); i < n; i++ {
-		v, err := readReply(cn, geoLocationParser)
-		if err != nil {
-			return nil, err
+func newGeoLocationSliceParser(q *GeoRadiusQuery) multiBulkParser {
+	return func(cn *conn, n int64) (interface{}, error) {
+		locs := make([]GeoLocation, 0, n)
+		for i := int64(0); i < n; i++ {
+			v, err := readReply(cn, newGeoLocationParser(q))
+			if err != nil {
+				return nil, err
+			}
+			switch vv := v.(type) {
+			case []byte:
+				locs = append(locs, GeoLocation{
+					Name: string(vv),
+				})
+			case *GeoLocation:
+				locs = append(locs, *vv)
+			default:
+				return nil, fmt.Errorf("got %T, expected string or *GeoLocation", v)
+			}
 		}
-		switch vv := v.(type) {
-		case []byte:
-			locs = append(locs, GeoLocation{
-				Name: string(vv),
-			})
-		case *GeoLocation:
-			locs = append(locs, *vv)
-		default:
-			return nil, fmt.Errorf("got %T, expected string or *GeoLocation", v)
-		}
+		return locs, nil
 	}
-	return locs, nil
 }

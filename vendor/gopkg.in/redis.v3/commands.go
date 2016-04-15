@@ -779,7 +779,7 @@ func (c *commandable) LPush(key string, values ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) LPushX(key, value string) *IntCmd {
+func (c *commandable) LPushX(key, value interface{}) *IntCmd {
 	cmd := NewIntCmd("LPUSHX", key, value)
 	c.Process(cmd)
 	return cmd
@@ -796,13 +796,13 @@ func (c *commandable) LRange(key string, start, stop int64) *StringSliceCmd {
 	return cmd
 }
 
-func (c *commandable) LRem(key string, count int64, value string) *IntCmd {
+func (c *commandable) LRem(key string, count int64, value interface{}) *IntCmd {
 	cmd := NewIntCmd("LREM", key, count, value)
 	c.Process(cmd)
 	return cmd
 }
 
-func (c *commandable) LSet(key string, index int64, value string) *StatusCmd {
+func (c *commandable) LSet(key string, index int64, value interface{}) *StatusCmd {
 	cmd := NewStatusCmd("LSET", key, index, value)
 	c.Process(cmd)
 	return cmd
@@ -843,7 +843,7 @@ func (c *commandable) RPush(key string, values ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) RPushX(key string, value string) *IntCmd {
+func (c *commandable) RPushX(key string, value interface{}) *IntCmd {
 	cmd := NewIntCmd("RPUSHX", key, value)
 	c.Process(cmd)
 	return cmd
@@ -915,7 +915,7 @@ func (c *commandable) SInterStore(destination string, keys ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) SIsMember(key, member string) *BoolCmd {
+func (c *commandable) SIsMember(key string, member interface{}) *BoolCmd {
 	cmd := NewBoolCmd("SISMEMBER", key, member)
 	c.Process(cmd)
 	return cmd
@@ -927,7 +927,7 @@ func (c *commandable) SMembers(key string) *StringSliceCmd {
 	return cmd
 }
 
-func (c *commandable) SMove(source, destination, member string) *BoolCmd {
+func (c *commandable) SMove(source, destination string, member interface{}) *BoolCmd {
 	cmd := NewBoolCmd("SMOVE", source, destination, member)
 	c.Process(cmd)
 	return cmd
@@ -990,15 +990,15 @@ func (c *commandable) SUnionStore(destination string, keys ...string) *IntCmd {
 
 //------------------------------------------------------------------------------
 
-// Sorted set member.
+// Z represents sorted set member.
 type Z struct {
 	Score  float64
 	Member interface{}
 }
 
-// Sorted set store operation.
+// ZStore is used as an arg to ZInterStore and ZUnionStore.
 type ZStore struct {
-	Weights []int64
+	Weights []float64
 	// Can be SUM, MIN or MAX.
 	Aggregate string
 }
@@ -1113,11 +1113,7 @@ func (c *commandable) ZIncrBy(key string, increment float64, member string) *Flo
 	return cmd
 }
 
-func (c *commandable) ZInterStore(
-	destination string,
-	store ZStore,
-	keys ...string,
-) *IntCmd {
+func (c *commandable) ZInterStore(destination string, store ZStore, keys ...string) *IntCmd {
 	args := make([]interface{}, 3+len(keys))
 	args[0] = "ZINTERSTORE"
 	args[1] = destination
@@ -1332,6 +1328,43 @@ func (c *commandable) ZUnionStore(dest string, store ZStore, keys ...string) *In
 
 //------------------------------------------------------------------------------
 
+func (c *commandable) PFAdd(key string, fields ...string) *IntCmd {
+	args := make([]interface{}, 2+len(fields))
+	args[0] = "PFADD"
+	args[1] = key
+	for i, field := range fields {
+		args[2+i] = field
+	}
+	cmd := NewIntCmd(args...)
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) PFCount(keys ...string) *IntCmd {
+	args := make([]interface{}, 1+len(keys))
+	args[0] = "PFCOUNT"
+	for i, key := range keys {
+		args[1+i] = key
+	}
+	cmd := NewIntCmd(args...)
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) PFMerge(dest string, keys ...string) *StatusCmd {
+	args := make([]interface{}, 2+len(keys))
+	args[0] = "PFMERGE"
+	args[1] = dest
+	for i, key := range keys {
+		args[2+i] = key
+	}
+	cmd := NewStatusCmd(args...)
+	c.Process(cmd)
+	return cmd
+}
+
+//------------------------------------------------------------------------------
+
 func (c *commandable) BgRewriteAOF() *StatusCmd {
 	cmd := NewStatusCmd("BGREWRITEAOF")
 	cmd._clusterKeyPos = 0
@@ -1421,9 +1454,12 @@ func (c *commandable) FlushDb() *StatusCmd {
 	return cmd
 }
 
-func (c *commandable) Info() *StringCmd {
-	cmd := NewStringCmd("INFO")
-	cmd._clusterKeyPos = 0
+func (c *commandable) Info(section ...string) *StringCmd {
+	args := []interface{}{"INFO"}
+	if len(section) > 0 {
+		args = append(args, section[0])
+	}
+	cmd := NewStringCmd(args...)
 	c.Process(cmd)
 	return cmd
 }
@@ -1634,14 +1670,101 @@ func (c *commandable) ClusterMeet(host, port string) *StatusCmd {
 	return cmd
 }
 
+func (c *commandable) ClusterForget(nodeID string) *StatusCmd {
+	cmd := newKeylessStatusCmd("CLUSTER", "forget", nodeID)
+	c.Process(cmd)
+	return cmd
+}
+
 func (c *commandable) ClusterReplicate(nodeID string) *StatusCmd {
 	cmd := newKeylessStatusCmd("CLUSTER", "replicate", nodeID)
 	c.Process(cmd)
 	return cmd
 }
 
+func (c *commandable) ClusterResetSoft() *StatusCmd {
+	cmd := newKeylessStatusCmd("CLUSTER", "reset", "soft")
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterResetHard() *StatusCmd {
+	cmd := newKeylessStatusCmd("CLUSTER", "reset", "hard")
+	c.Process(cmd)
+	return cmd
+}
+
 func (c *commandable) ClusterInfo() *StringCmd {
 	cmd := NewStringCmd("CLUSTER", "info")
+	cmd._clusterKeyPos = 0
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterKeySlot(key string) *IntCmd {
+	cmd := NewIntCmd("CLUSTER", "keyslot", key)
+	cmd._clusterKeyPos = 2
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterCountFailureReports(nodeID string) *IntCmd {
+	cmd := NewIntCmd("CLUSTER", "count-failure-reports", nodeID)
+	cmd._clusterKeyPos = 2
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterCountKeysInSlot(slot int) *IntCmd {
+	cmd := NewIntCmd("CLUSTER", "countkeysinslot", slot)
+	cmd._clusterKeyPos = 2
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterDelSlots(slots ...int) *StatusCmd {
+	args := make([]interface{}, 2+len(slots))
+	args[0] = "CLUSTER"
+	args[1] = "DELSLOTS"
+	for i, slot := range slots {
+		args[2+i] = slot
+	}
+	cmd := newKeylessStatusCmd(args...)
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterDelSlotsRange(min, max int) *StatusCmd {
+	size := max - min + 1
+	slots := make([]int, size)
+	for i := 0; i < size; i++ {
+		slots[i] = min + i
+	}
+	return c.ClusterDelSlots(slots...)
+}
+
+func (c *commandable) ClusterSaveConfig() *StatusCmd {
+	cmd := newKeylessStatusCmd("CLUSTER", "saveconfig")
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ClusterSlaves(nodeID string) *StringSliceCmd {
+	cmd := NewStringSliceCmd("CLUSTER", "SLAVES", nodeID)
+	cmd._clusterKeyPos = 2
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) Readonly() *StatusCmd {
+	cmd := newKeylessStatusCmd("READONLY")
+	cmd._clusterKeyPos = 0
+	c.Process(cmd)
+	return cmd
+}
+
+func (c *commandable) ReadWrite() *StatusCmd {
+	cmd := newKeylessStatusCmd("READWRITE")
 	cmd._clusterKeyPos = 0
 	c.Process(cmd)
 	return cmd
@@ -1690,41 +1813,16 @@ func (c *commandable) GeoAdd(key string, geoLocation ...*GeoLocation) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) geoRadius(args []interface{}, query *GeoRadiusQuery) *GeoLocationCmd {
-	args = append(args, query.Radius)
-	if query.Unit != "" {
-		args = append(args, query.Unit)
-	} else {
-		args = append(args, "km")
-	}
-	if query.WithCoord {
-		args = append(args, "WITHCOORD")
-	}
-	if query.WithDist {
-		args = append(args, "WITHDIST")
-	}
-	if query.WithGeoHash {
-		args = append(args, "WITHHASH")
-	}
-	if query.Count > 0 {
-		args = append(args, "COUNT", query.Count)
-	}
-	if query.Sort != "" {
-		args = append(args, query.Sort)
-	}
-	cmd := NewGeoLocationCmd(args...)
+func (c *commandable) GeoRadius(key string, longitude, latitude float64, query *GeoRadiusQuery) *GeoLocationCmd {
+	cmd := NewGeoLocationCmd(query, "GEORADIUS", key, longitude, latitude)
 	c.Process(cmd)
 	return cmd
 }
 
-func (c *commandable) GeoRadius(key string, longitude, latitude float64, query *GeoRadiusQuery) *GeoLocationCmd {
-	args := []interface{}{"GEORADIUS", key, longitude, latitude}
-	return c.geoRadius(args, query)
-}
-
 func (c *commandable) GeoRadiusByMember(key, member string, query *GeoRadiusQuery) *GeoLocationCmd {
-	args := []interface{}{"GEORADIUSBYMEMBER", key, member}
-	return c.geoRadius(args, query)
+	cmd := NewGeoLocationCmd(query, "GEORADIUSBYMEMBER", key, member)
+	c.Process(cmd)
+	return cmd
 }
 
 func (c *commandable) GeoDist(key string, member1, member2, unit string) *FloatCmd {

@@ -15,9 +15,11 @@ type RawTranslationData struct {
 	Source      string
 	Lang        string
 	Name        string
+	Original    string
 	Translation string
 	Time        time.Duration
 	Score       float64
+	Order       uint64
 }
 
 type RawParticularData struct {
@@ -45,5 +47,5 @@ type TranslationContainer struct {
 	//Meta              map[string]interface{}
 	//RawTranslations   map[string]TranslationBag
 	RawTransData      map[string]map[string]*RawTranslationData
-	//RawParticularData []*RawParticularData
+	RawSegmentsData   []map[string]map[string]*RawTranslationData
 }

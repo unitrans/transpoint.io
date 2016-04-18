@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 	"github.com/urakozz/transpoint.io/src/components"
+	"github.com/urakozz/transpoint.io/src/translator/processing"
 )
 
 type Translator interface {
@@ -53,6 +54,8 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 		container.RawTransData[resp.Lang][resp.Name] = resp
 	}
 
+	//container.RawSegmentsData = t.GetSegmentTranslations(text, langs)
+
 
 	for lang, _ := range container.RawTransData{
 		container.RawTransData[lang]["uni"] = &RawTranslationData{}
@@ -94,6 +97,59 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	}
 
 	return container
+}
+
+func (t *TranslateAdapter) GetSegmentTranslations(text string, languages []string) ([]map[string]map[string]*RawTranslationData) {
+
+	textSegments := processing.Segments.Split(text)
+
+	translations := make([]map[string]map[string]*RawTranslationData, len(textSegments))
+	for i, seg := range textSegments {
+		translations[i] = make(map[string]map[string]*RawTranslationData, len(languages))
+		for _, lang := range languages {
+			translations[i][lang] = make(map[string]*RawTranslationData, len(t.translateBackend))
+			for _, back := range t.translateBackend{
+				translations[i][lang][back.GetName()] = &RawTranslationData{
+					Name:back.GetName(),
+					Original:seg.Text,
+				}
+			}
+		}
+
+	}
+
+	wg := &sync.WaitGroup{}
+	mu := &sync.Mutex{}
+	//translationsSegments []*RawTranslationData
+	for _, v := range languages {
+		for _, back := range t.translateBackend{
+			for i, seg := range textSegments {
+				wg.Add(1)
+				go func(seg *processing.Segment, lang string, index int, backend backend_full.IBackendFull){
+					defer wg.Done()
+					if seg.Type > processing.SegmentText{
+						mu.Lock()
+						translations[index][lang][back.GetName()].Translation = seg.Text
+						mu.Unlock()
+					} else {
+						t := time.Now()
+
+						resp := backend.TranslateFull(seg.Text, lang)
+
+						mu.Lock()
+						translations[index][lang][backend.GetName()].Source = resp.GetSource()
+						translations[index][lang][backend.GetName()].Lang = resp.GetLang()
+						translations[index][lang][backend.GetName()].Translation = resp.GetText()
+						translations[index][lang][backend.GetName()].Time = time.Since(t) / time.Millisecond
+						mu.Unlock()
+					}
+
+				}(seg, v, i, back)
+			}
+		}
+	}
+	wg.Wait()
+	return translations
 }
 
 func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTranslationData){

@@ -47,6 +47,7 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 
 	for lang, details := range container.RawTransData {
 		container.Translations[lang] = details["uni"].Translation
+		container.Source = details["uni"].Source
 	}
 
 	return container

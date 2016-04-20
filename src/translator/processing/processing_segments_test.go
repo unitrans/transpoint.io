@@ -30,4 +30,9 @@ func TestEmpty(t *testing.T) {
 
 	assert.Equal(t, 0, len(segs))
 }
+func TestEndsOnDot(t *testing.T) {
+	segs := Segments.Split("Given that these processes are crucially constrained by sentence boundaries, the successful determination of these boundaries is a prerequisite for proper sentence processing. Sentence boundary detection is not a trivial task, though. Nasennebenhöhlenentzündung.")
+
+	assert.Equal(t, 0, len(segs))
+}
 

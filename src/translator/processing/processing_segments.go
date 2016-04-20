@@ -28,7 +28,8 @@ type ProcessingSegments struct {
 
 func (p *ProcessingSegments) Split(s string) []*Segment {
 	//unicode.IsGraphic([]rune("s"))
-	return p.FieldsFunc(s, p.CombineFuncs(p.IsNewLine, p.IsDot, p.IsPunctuation))
+	//@todo fix .-ending
+	return p.FieldsFunc(s+" ", p.CombineFuncs(p.IsNewLine, p.IsDot, p.IsPunctuation))
 }
 
 func (p *ProcessingSegments) CombineFuncs(fns... func(rune) bool) func(rune) bool {

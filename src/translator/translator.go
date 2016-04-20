@@ -9,6 +9,7 @@ import (
 	"time"
 	"github.com/urakozz/transpoint.io/src/components"
 	"github.com/urakozz/transpoint.io/src/translator/processing"
+"math"
 )
 
 type Translator interface {
@@ -31,77 +32,93 @@ func NewTranslateAdapter(back []backend_full.IBackendFull, markov components.ICh
 func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationContainer {
 	langs = array_uniq(langs)
 
-	container := &TranslationContainer{
-		Translations:TranslationBag{},
-		RawTransData: make(map[string]map[string]*RawTranslationData),
-	}
-	container.Original = text
+	container := t.createContainer(text, langs)
 
 	//fill markov model
 	if len(text) > 100{
 		t.markov.Add(text)
 	}
 
-	responseChan := make(chan *RawTranslationData, len(langs))
+	segments := processing.Segments.Split(text)
+	container.RawSegmentsData = t.GetSegmentTranslations(segments, langs)
+	t.CalculateScores(container, segments)
+	t.AppendUniEngine(container, segments)
+	t.CalculateRawTransData(container)
 
-	go t.doRequestsTranslators(text, langs, responseChan)
-
-	for resp := range responseChan {
-		if _, ok := container.RawTransData[resp.Lang]; !ok {
-			container.RawTransData[resp.Lang] = make(map[string]*RawTranslationData)
-		}
-		resp.Score = t.markov.Occurrences(resp.Translation)
-		container.RawTransData[resp.Lang][resp.Name] = resp
-	}
-
-	//container.RawSegmentsData = t.GetSegmentTranslations(text, langs)
-
-
-	for lang, _ := range container.RawTransData{
-		container.RawTransData[lang]["uni"] = &RawTranslationData{}
-	}
-	// set google by default
 	for lang, details := range container.RawTransData{
-		*container.RawTransData[lang]["uni"] = *details["google"]
-	}
-	// if google is empty (credential issues)
-	for lang, details := range container.RawTransData{
-		if details["google"].Translation == "" {
-			*container.RawTransData[lang]["uni"] = *details["yandex"]
-		}
-	}
-        // if yandex detects different lang, use it (also implicitly covers previous case)
-	for lang, details := range container.RawTransData{
-		if details["yandex"].Source != details["google"].Source {
-			container.RawTransData[lang]["uni"].Translation = details["yandex"].Translation
-			container.RawTransData[lang]["uni"].Source = details["yandex"].Source
-			container.RawTransData[lang]["uni"].Lang = details["yandex"].Lang
-		} else if details["yandex"].Score > details["google"].Score {
-			container.RawTransData[lang]["uni"].Translation = details["yandex"].Translation
-		}
-	}
-	//// fill markov model if confident source
-	//for _, details := range container.RawTransData{
-	//	if details["yandex"].Source == details["google"].Source {
-	//		t.markov.Add()
-	//	}
-	//}
-
-	//postprocessing
-	for lang, details := range container.RawTransData{
-		container.RawTransData[lang]["uni"].Name = "unitrans"
-		container.RawTransData[lang]["uni"].Score = t.markov.Occurrences(details["uni"].Translation)
-
 		container.Translations[lang] = details["uni"].Translation
-		container.Source = details["uni"].Source
 	}
 
 	return container
 }
 
-func (t *TranslateAdapter) GetSegmentTranslations(text string, languages []string) ([]map[string]map[string]*RawTranslationData) {
+func (t *TranslateAdapter) CalculateScores(container *TranslationContainer, segments []*processing.Segment){
+	for i, seg := range segments{
+		if seg.Type > processing.SegmentText{
+			continue
+		}
+		for _, lang := range container.Langs{
+			for _, back := range t.translateBackend{
+				rawSegData := container.RawSegmentsData[i][lang][back.GetName()]
+				rawSegData.Score = t.markov.Occurrences(rawSegData.Translation)
+			}
+		}
+	}
+}
 
-	textSegments := processing.Segments.Split(text)
+func (t *TranslateAdapter) AppendUniEngine(container *TranslationContainer, segments []*processing.Segment) {
+
+	for i, seg := range segments{
+		for _, lang := range container.Langs {
+
+			if seg.Type > processing.SegmentText {
+				container.RawSegmentsData[i][lang]["uni"] = &RawTranslationData{Name:"uni", Translation:seg.Text}
+			} else {
+				container.RawSegmentsData[i][lang]["uni"] = t.ChooseSegment(container.RawSegmentsData[i][lang])
+			}
+		}
+	}
+
+}
+
+func (t *TranslateAdapter) CalculateRawTransData(container *TranslationContainer) {
+
+	for _, seg := range container.RawSegmentsData {
+		for lang, langc := range seg {
+			for back, backc := range langc{
+				container.RawTransData[lang][back].Translation += backc.Translation
+				container.RawTransData[lang][back].Score += backc.Score
+				if backc.Source != "" {
+					container.RawTransData[lang][back].Source = backc.Source
+				}
+			}
+		}
+	}
+}
+
+func (t *TranslateAdapter) ChooseSegment(engines map[string]*RawTranslationData) *RawTranslationData {
+
+	result := &RawTranslationData{}
+	// set yandex by default
+	*result = *engines["yandex"];
+
+	// otherwise google if yandex failed
+	if engines["yandex"].Translation == "" {
+		*result = *engines["google"]
+	}
+
+	// if yandex detects different lang, reduce google ranc
+	if engines["yandex"].Source != engines["google"].Source {
+		engines["google"].Score = -math.MaxFloat64
+	}
+	maxScore := NewSegmentsSorter(engines).Max()
+	*result = *maxScore
+	result.Name = "uni"
+
+	return result
+}
+
+func (t *TranslateAdapter) GetSegmentTranslations(textSegments []*processing.Segment, languages []string) ([]map[string]map[string]*RawTranslationData) {
 
 	translations := make([]map[string]map[string]*RawTranslationData, len(textSegments))
 	for i, seg := range textSegments {
@@ -121,15 +138,15 @@ func (t *TranslateAdapter) GetSegmentTranslations(text string, languages []strin
 	wg := &sync.WaitGroup{}
 	mu := &sync.Mutex{}
 	//translationsSegments []*RawTranslationData
-	for _, v := range languages {
-		for _, back := range t.translateBackend{
-			for i, seg := range textSegments {
+	for _, l := range languages {
+		for _, b := range t.translateBackend{
+			for i, s := range textSegments {
 				wg.Add(1)
 				go func(seg *processing.Segment, lang string, index int, backend backend_full.IBackendFull){
 					defer wg.Done()
 					if seg.Type > processing.SegmentText{
 						mu.Lock()
-						translations[index][lang][back.GetName()].Translation = seg.Text
+						translations[index][lang][backend.GetName()].Translation = seg.Text
 						mu.Unlock()
 					} else {
 						t := time.Now()
@@ -144,7 +161,7 @@ func (t *TranslateAdapter) GetSegmentTranslations(text string, languages []strin
 						mu.Unlock()
 					}
 
-				}(seg, v, i, back)
+				}(s, l, i, b)
 			}
 		}
 	}
@@ -177,6 +194,24 @@ func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string
 	}
 	wg.Wait()
 	close(c)
+}
+
+func (t *TranslateAdapter) createContainer(text string, langs []string) *TranslationContainer{
+	container := &TranslationContainer{
+		Translations:TranslationBag{},
+		Langs:langs,
+		Original:text,
+		RawTransData: make(map[string]map[string]*RawTranslationData),
+	}
+
+	for _, lang := range container.Langs{
+		container.RawTransData[lang] = make(map[string]*RawTranslationData)
+		for _, back := range t.translateBackend{
+			container.RawTransData[lang][back.GetName()] = &RawTranslationData{Name:back.GetName()}
+		}
+		container.RawTransData[lang]["uni"] = &RawTranslationData{Name:"uni"}
+	}
+	return container
 }
 
 func array_uniq(langs []string) []string {

@@ -86,6 +86,7 @@ func (t *TranslateAdapter) CalculateRawTransData(container *TranslationContainer
 	for _, seg := range container.RawSegmentsData {
 		for lang, langc := range seg {
 			for back, backc := range langc {
+				container.RawTransData[lang][back].Lang = lang
 				container.RawTransData[lang][back].Translation += backc.Translation
 				container.RawTransData[lang][back].Score += backc.Score
 				if backc.Source != "" {

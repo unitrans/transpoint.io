@@ -3,13 +3,14 @@
 package translator
 
 import (
-	"github.com/urakozz/transpoint.io/src/translator/backend_particular"
+	"github.com/urakozz/transpoint.io/src/components"
 	"github.com/urakozz/transpoint.io/src/translator/backend_full"
+	"github.com/urakozz/transpoint.io/src/translator/backend_particular"
+	"github.com/urakozz/transpoint.io/src/translator/processing"
+	"math"
+	"strings"
 	"sync"
 	"time"
-	"github.com/urakozz/transpoint.io/src/components"
-	"github.com/urakozz/transpoint.io/src/translator/processing"
-"math"
 )
 
 type Translator interface {
@@ -18,15 +19,14 @@ type Translator interface {
 }
 
 type TranslateAdapter struct {
-	translateBackend []backend_full.IBackendFull
+	translateBackend    []backend_full.IBackendFull
 	translateParticular []backend_particular.IBackendParticular
-	markov components.IChain
-	landChan chan string
-
+	markov              components.IChain
+	landChan            chan string
 }
 
 func NewTranslateAdapter(back []backend_full.IBackendFull, markov components.IChain) *TranslateAdapter {
-	return &TranslateAdapter{translateBackend:back, landChan:make(chan string, 1), markov:markov}
+	return &TranslateAdapter{translateBackend: back, landChan: make(chan string, 1), markov: markov}
 }
 
 func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationContainer {
@@ -35,7 +35,7 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	container := t.createContainer(text, langs)
 
 	//fill markov model
-	if len(text) > 100{
+	if len(text) > 100 {
 		t.markov.Add(text)
 	}
 
@@ -45,20 +45,20 @@ func (t *TranslateAdapter) Translate(text string, langs []string) *TranslationCo
 	t.AppendUniEngine(container, segments)
 	t.CalculateRawTransData(container)
 
-	for lang, details := range container.RawTransData{
+	for lang, details := range container.RawTransData {
 		container.Translations[lang] = details["uni"].Translation
 	}
 
 	return container
 }
 
-func (t *TranslateAdapter) CalculateScores(container *TranslationContainer, segments []*processing.Segment){
-	for i, seg := range segments{
-		if seg.Type > processing.SegmentText{
+func (t *TranslateAdapter) CalculateScores(container *TranslationContainer, segments []*processing.Segment) {
+	for i, seg := range segments {
+		if seg.Type > processing.SegmentText {
 			continue
 		}
-		for _, lang := range container.Langs{
-			for _, back := range t.translateBackend{
+		for _, lang := range container.Langs {
+			for _, back := range t.translateBackend {
 				rawSegData := container.RawSegmentsData[i][lang][back.GetName()]
 				rawSegData.Score = t.markov.Occurrences(rawSegData.Translation)
 			}
@@ -68,11 +68,11 @@ func (t *TranslateAdapter) CalculateScores(container *TranslationContainer, segm
 
 func (t *TranslateAdapter) AppendUniEngine(container *TranslationContainer, segments []*processing.Segment) {
 
-	for i, seg := range segments{
+	for i, seg := range segments {
 		for _, lang := range container.Langs {
 
 			if seg.Type > processing.SegmentText {
-				container.RawSegmentsData[i][lang]["uni"] = &RawTranslationData{Name:"uni", Translation:seg.Text}
+				container.RawSegmentsData[i][lang]["uni"] = &RawTranslationData{Name: "uni", Translation: seg.Text}
 			} else {
 				container.RawSegmentsData[i][lang]["uni"] = t.ChooseSegment(container.RawSegmentsData[i][lang])
 			}
@@ -85,11 +85,12 @@ func (t *TranslateAdapter) CalculateRawTransData(container *TranslationContainer
 
 	for _, seg := range container.RawSegmentsData {
 		for lang, langc := range seg {
-			for back, backc := range langc{
+			for back, backc := range langc {
 				container.RawTransData[lang][back].Translation += backc.Translation
 				container.RawTransData[lang][back].Score += backc.Score
 				if backc.Source != "" {
-					container.RawTransData[lang][back].Source = backc.Source
+					currLang := container.RawTransData[lang][back].Source
+					container.RawTransData[lang][back].Source = strings.Join(array_uniq(strings.Split(currLang+","+backc.Source, ",")), ",")
 				}
 			}
 		}
@@ -100,7 +101,7 @@ func (t *TranslateAdapter) ChooseSegment(engines map[string]*RawTranslationData)
 
 	result := &RawTranslationData{}
 	// set yandex by default
-	*result = *engines["yandex"];
+	*result = *engines["yandex"]
 
 	// otherwise google if yandex failed
 	if engines["yandex"].Translation == "" {
@@ -118,17 +119,17 @@ func (t *TranslateAdapter) ChooseSegment(engines map[string]*RawTranslationData)
 	return result
 }
 
-func (t *TranslateAdapter) GetSegmentTranslations(textSegments []*processing.Segment, languages []string) ([]map[string]map[string]*RawTranslationData) {
+func (t *TranslateAdapter) GetSegmentTranslations(textSegments []*processing.Segment, languages []string) []map[string]map[string]*RawTranslationData {
 
 	translations := make([]map[string]map[string]*RawTranslationData, len(textSegments))
 	for i, seg := range textSegments {
 		translations[i] = make(map[string]map[string]*RawTranslationData, len(languages))
 		for _, lang := range languages {
 			translations[i][lang] = make(map[string]*RawTranslationData, len(t.translateBackend))
-			for _, back := range t.translateBackend{
+			for _, back := range t.translateBackend {
 				translations[i][lang][back.GetName()] = &RawTranslationData{
-					Name:back.GetName(),
-					Original:seg.Text,
+					Name:     back.GetName(),
+					Original: seg.Text,
 				}
 			}
 		}
@@ -139,12 +140,12 @@ func (t *TranslateAdapter) GetSegmentTranslations(textSegments []*processing.Seg
 	mu := &sync.Mutex{}
 	//translationsSegments []*RawTranslationData
 	for _, l := range languages {
-		for _, b := range t.translateBackend{
+		for _, b := range t.translateBackend {
 			for i, s := range textSegments {
 				wg.Add(1)
-				go func(seg *processing.Segment, lang string, index int, backend backend_full.IBackendFull){
+				go func(seg *processing.Segment, lang string, index int, backend backend_full.IBackendFull) {
 					defer wg.Done()
-					if seg.Type > processing.SegmentText{
+					if seg.Type > processing.SegmentText {
 						mu.Lock()
 						translations[index][lang][backend.GetName()].Translation = seg.Text
 						mu.Unlock()
@@ -169,23 +170,23 @@ func (t *TranslateAdapter) GetSegmentTranslations(textSegments []*processing.Seg
 	return translations
 }
 
-func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTranslationData){
+func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTranslationData) {
 
 	wg := &sync.WaitGroup{}
 	for _, v := range languages {
-		for _, back := range t.translateBackend{
+		for _, back := range t.translateBackend {
 			wg.Add(1)
-			go func(text, lang string, backend backend_full.IBackendFull){
+			go func(text, lang string, backend backend_full.IBackendFull) {
 				defer wg.Done()
 				t := time.Now()
 				resp := backend.TranslateFull(text, lang)
 
 				raw := &RawTranslationData{
-					Source:resp.GetSource(),
-					Lang:resp.GetLang(),
-					Name:backend.GetName(),
-					Translation:resp.GetText(),
-					Time: time.Since(t) / time.Millisecond,
+					Source:      resp.GetSource(),
+					Lang:        resp.GetLang(),
+					Name:        backend.GetName(),
+					Translation: resp.GetText(),
+					Time:        time.Since(t) / time.Millisecond,
 				}
 				c <- raw
 			}(text, v, back)
@@ -196,20 +197,20 @@ func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string
 	close(c)
 }
 
-func (t *TranslateAdapter) createContainer(text string, langs []string) *TranslationContainer{
+func (t *TranslateAdapter) createContainer(text string, langs []string) *TranslationContainer {
 	container := &TranslationContainer{
-		Translations:TranslationBag{},
-		Langs:langs,
-		Original:text,
+		Translations: TranslationBag{},
+		Langs:        langs,
+		Original:     text,
 		RawTransData: make(map[string]map[string]*RawTranslationData),
 	}
 
-	for _, lang := range container.Langs{
+	for _, lang := range container.Langs {
 		container.RawTransData[lang] = make(map[string]*RawTranslationData)
-		for _, back := range t.translateBackend{
-			container.RawTransData[lang][back.GetName()] = &RawTranslationData{Name:back.GetName()}
+		for _, back := range t.translateBackend {
+			container.RawTransData[lang][back.GetName()] = &RawTranslationData{Name: back.GetName()}
 		}
-		container.RawTransData[lang]["uni"] = &RawTranslationData{Name:"uni"}
+		container.RawTransData[lang]["uni"] = &RawTranslationData{Name: "uni"}
 	}
 	return container
 }
@@ -217,10 +218,13 @@ func (t *TranslateAdapter) createContainer(text string, langs []string) *Transla
 func array_uniq(langs []string) []string {
 	set := make(map[string]struct{})
 	for _, val := range langs {
+		if val == "" {
+			continue
+		}
 		set[val] = struct{}{}
 	}
 	var languages []string
-	for lang, _ := range set{
+	for lang, _ := range set {
 		languages = append(languages, lang)
 	}
 	return languages

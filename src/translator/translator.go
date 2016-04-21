@@ -103,11 +103,11 @@ func (t *TranslateAdapter) ChooseSegment(engines map[string]*RawTranslationData)
 
 	result := &RawTranslationData{}
 	// set yandex by default
-	*result = *engines["yandex"]
+	*result = *engines["google"]
 
 	// otherwise google if yandex failed
-	if engines["yandex"].Translation == "" {
-		*result = *engines["google"]
+	if engines["google"].Translation == "" {
+		engines["google"].Score = -math.MaxFloat64
 	}
 
 	// if yandex detects different lang, reduce google ranc

@@ -2,8 +2,10 @@
 // Proprietary license.
 package processing
 
-
-
+import (
+	"github.com/urakozz/go-emoji"
+	"unicode"
+)
 
 type SegmentType int
 
@@ -19,6 +21,7 @@ type Segment struct {
 
 
 var Segments = &ProcessingSegments{}
+var emojiParser = emoji.NewEmojiParser()
 
 //@todo write proper automata
 type ProcessingSegments struct {
@@ -28,8 +31,7 @@ type ProcessingSegments struct {
 
 func (p *ProcessingSegments) Split(s string) []*Segment {
 	//unicode.IsGraphic([]rune("s"))
-	//@todo fix .-ending
-	return p.FieldsFunc(s+" ", p.CombineFuncs(p.IsNewLine, p.IsDot, p.IsPunctuation))
+	return p.FieldsFunc(s, p.CombineFuncs(p.IsNewLine, p.IsDot, p.IsPunctuation, p.IsEmoji))
 }
 
 func (p *ProcessingSegments) CombineFuncs(fns... func(rune) bool) func(rune) bool {
@@ -69,6 +71,9 @@ func (p *ProcessingSegments) IsPunctuation(r rune) bool {
 	return false
 
 }
+func (p *ProcessingSegments) IsEmoji(r rune) bool {
+	return emojiParser.MatchString(string(r))
+}
 
 func (p *ProcessingSegments) FieldsFunc(s string, f func(rune) bool) []*Segment {
 	// First count the fields.
@@ -86,16 +91,22 @@ func (p *ProcessingSegments) FieldsFunc(s string, f func(rune) bool) []*Segment 
 	}
 
 	// Now create them.
-	a := make([]*Segment, n*2-1)
+	a := make([]*Segment, 0, n*2)
 	na := 0
 	//fieldStart := -1 // Set to -1 when looking for start of field.
 	for i, rune := range s {
 		if i == 0 {
-			a[na] = &Segment{Text:string(rune),Type:SegmentText}
+			a = append(a, &Segment{Text:string(rune),Type:SegmentText})
 			if f(rune) {
 				a[na].Type = SegmentSeparator
 			}
 		} else {
+			// if it is space and previously it was dots, then it is separator as well
+			if unicode.IsSpace(rune) && a[na].Type == SegmentSeparator  {
+				a[na].Text += string(rune)
+				continue
+			}
+
 			t := SegmentText
 			if f(rune) {
 				t = SegmentSeparator
@@ -104,11 +115,9 @@ func (p *ProcessingSegments) FieldsFunc(s string, f func(rune) bool) []*Segment 
 				a[na].Text += string(rune)
 			} else {
 				na++
-				a[na] = &Segment{Text:string(rune),Type:t}
+				a = append(a, &Segment{Text:string(rune),Type:t})
 			}
-
 		}
-
 	}
 
 	return a

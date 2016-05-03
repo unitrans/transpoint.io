@@ -107,12 +107,12 @@ func (t *TranslateAdapter) ChooseSegment(engines map[string]*RawTranslationData)
 
 	// otherwise google if yandex failed
 	if engines["google"].Translation == "" {
-		engines["google"].Score = -math.MaxFloat64
+		engines["google"].Score = float64(-math.MaxInt32)
 	}
 
 	// if yandex detects different lang, reduce google ranc
 	if engines["yandex"].Source != engines["google"].Source {
-		engines["google"].Score = -math.MaxFloat64
+		engines["google"].Score = float64(-math.MaxInt32)
 	}
 	maxScore := NewSegmentsSorter(engines).Max()
 	*result = *maxScore

@@ -11,15 +11,15 @@ import (
 	"github.com/davecheney/profile"
 	"gopkg.in/redis.v3"
 
-	t "github.com/urakozz/transpoint.io/src/translator"
-	"github.com/urakozz/transpoint.io/src/scenario"
+	t "github.com/unitrans/unitrans/src/translator"
+	"github.com/unitrans/unitrans/src/scenario"
 
-	"github.com/urakozz/transpoint.io/src/infrastrucrute/storage"
-	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
-	//"github.com/urakozz/transpoint.io/src/infrastrucrute/translator/particular"
-	"github.com/urakozz/transpoint.io/src/translator/backend_full"
-	"github.com/urakozz/transpoint.io/src/infrastrucrute/httpclient"
-	"github.com/urakozz/transpoint.io/src/components"
+	"github.com/unitrans/unitrans/src/infrastrucrute/storage"
+	"github.com/unitrans/unitrans/src/interface/repository/redis"
+	//"github.com/unitrans/unitrans/src/infrastrucrute/translator/particular"
+	"github.com/unitrans/unitrans/src/translator/backend_full"
+	"github.com/unitrans/unitrans/src/infrastrucrute/httpclient"
+	"github.com/unitrans/unitrans/src/components"
 )
 
 

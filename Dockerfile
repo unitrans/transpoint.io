@@ -1,7 +1,7 @@
 FROM golang
 
-ADD . /go/src/github.com/urakozz/transpoint.io
-WORKDIR /go/src/github.com/urakozz/transpoint.io
+ADD . /go/src/github.com/unitrans/unitrans
+WORKDIR /go/src/github.com/unitrans/unitrans
 
 ENV GO15VENDOREXPERIMENT 1
 RUN go version && go env

@@ -3,10 +3,10 @@
 package translator
 
 import (
-	"github.com/urakozz/transpoint.io/src/components"
-	"github.com/urakozz/transpoint.io/src/translator/backend_full"
-	"github.com/urakozz/transpoint.io/src/translator/backend_particular"
-	"github.com/urakozz/transpoint.io/src/translator/processing"
+	"github.com/unitrans/unitrans/src/components"
+	"github.com/unitrans/unitrans/src/translator/backend_full"
+	"github.com/unitrans/unitrans/src/translator/backend_particular"
+	"github.com/unitrans/unitrans/src/translator/processing"
 	"math"
 	"strings"
 	"sync"

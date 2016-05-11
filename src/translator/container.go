@@ -3,7 +3,7 @@
 package translator
 
 import (
-	"github.com/urakozz/transpoint.io/src/translator/backend_particular"
+	"github.com/unitrans/unitrans/src/translator/backend_particular"
 	"time"
 	"sort"
 )

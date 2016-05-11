@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/urakozz/transpoint.io",
+	"ImportPath": "github.com/unitrans/unitrans",
 	"GoVersion": "go1.6.1",
 	"Deps": [
 		{

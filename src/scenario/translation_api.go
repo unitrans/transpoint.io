@@ -19,9 +19,9 @@ import (
 
 	r "gopkg.in/unrolled/render.v1"
 
-	"github.com/urakozz/transpoint.io/src/infrastrucrute/middleware"
-	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
-	t "github.com/urakozz/transpoint.io/src/translator"
+	"github.com/unitrans/unitrans/src/infrastrucrute/middleware"
+	"github.com/unitrans/unitrans/src/interface/repository/redis"
+	t "github.com/unitrans/unitrans/src/translator"
 )
 
 

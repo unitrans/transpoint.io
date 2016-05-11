@@ -20,9 +20,9 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/urakozz/transpoint.io/src/infrastrucrute/middleware"
-	"github.com/urakozz/transpoint.io/src/interface/repository/redis"
-	"github.com/urakozz/transpoint.io/src/domain"
+	"github.com/unitrans/unitrans/src/infrastrucrute/middleware"
+	"github.com/unitrans/unitrans/src/interface/repository/redis"
+	"github.com/unitrans/unitrans/src/domain"
 )
 
 const (

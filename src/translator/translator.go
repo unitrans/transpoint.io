@@ -102,17 +102,19 @@ func (t *TranslateAdapter) CalculateRawTransData(container *TranslationContainer
 func (t *TranslateAdapter) ChooseSegment(engines map[string]*RawTranslationData) *RawTranslationData {
 
 	result := &RawTranslationData{}
-	// set yandex by default
-	*result = *engines["google"]
-
-	// otherwise google if yandex failed
-	if engines["google"].Translation == "" {
-		engines["google"].Score = float64(-math.MaxInt32)
+	// set google by default
+	for _, v := range engines {
+		if v.Translation == "" {
+			v.Score = float64(-1)
+		}
+		if v.Translation == v.Original {
+			v.Score = float64(-1)
+		}
 	}
 
 	// if yandex detects different lang, reduce google ranc
-	if engines["yandex"].Source != engines["google"].Source {
-		engines["google"].Score = float64(-math.MaxInt32)
+	if engines["yandex"].Score >= 0 && engines["yandex"].Source != engines["google"].Source {
+		engines["google"].Score = float64(-2)
 	}
 	maxScore := NewSegmentsSorter(engines).Max()
 	*result = *maxScore
@@ -172,32 +174,32 @@ func (t *TranslateAdapter) GetSegmentTranslations(textSegments []*processing.Seg
 	return translations
 }
 
-func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTranslationData) {
-
-	wg := &sync.WaitGroup{}
-	for _, v := range languages {
-		for _, back := range t.translateBackend {
-			wg.Add(1)
-			go func(text, lang string, backend backend_full.IBackendFull) {
-				defer wg.Done()
-				t := time.Now()
-				resp := backend.TranslateFull(text, lang)
-
-				raw := &RawTranslationData{
-					Source:      resp.GetSource(),
-					Lang:        resp.GetLang(),
-					Name:        backend.GetName(),
-					Translation: resp.GetText(),
-					Time:        time.Since(t) / time.Millisecond,
-				}
-				c <- raw
-			}(text, v, back)
-		}
-
-	}
-	wg.Wait()
-	close(c)
-}
+//func (t *TranslateAdapter) doRequestsTranslators(text string, languages []string, c chan<- *RawTranslationData) {
+//
+//	wg := &sync.WaitGroup{}
+//	for _, v := range languages {
+//		for _, back := range t.translateBackend {
+//			wg.Add(1)
+//			go func(text, lang string, backend backend_full.IBackendFull) {
+//				defer wg.Done()
+//				t := time.Now()
+//				resp := backend.TranslateFull(text, lang)
+//
+//				raw := &RawTranslationData{
+//					Source:      resp.GetSource(),
+//					Lang:        resp.GetLang(),
+//					Name:        backend.GetName(),
+//					Translation: resp.GetText(),
+//					Time:        time.Since(t) / time.Millisecond,
+//				}
+//				c <- raw
+//			}(text, v, back)
+//		}
+//
+//	}
+//	wg.Wait()
+//	close(c)
+//}
 
 func (t *TranslateAdapter) createContainer(text string, langs []string) *TranslationContainer {
 	container := &TranslationContainer{

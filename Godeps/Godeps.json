@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/unitrans/unitrans",
-	"GoVersion": "go1.6.1",
+	"GoVersion": "go1.6.2",
 	"Deps": [
 		{
 			"ImportPath": "github.com/OneOfOne/xxhash",

@@ -7,7 +7,6 @@ import (
 	"github.com/unitrans/unitrans/src/translator/backend_full"
 	"github.com/unitrans/unitrans/src/translator/backend_particular"
 	"github.com/unitrans/unitrans/src/translator/processing"
-	"math"
 	"strings"
 	"sync"
 	"time"

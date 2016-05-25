@@ -44,6 +44,7 @@ func (t *GoogleTranslator) getQueryString(text, lang string)string{
 	form.Add("target", lang)
 	form.Add("q", text)
 	form.Add("format", "text")
+	form.Add("prettyprint", "false")
 	return form.Encode()
 }
 
